@@ -17,7 +17,7 @@ jobs:
     - name: setup PHP
       uses: shivammathur/setup-php@v2
       with:
-        php-version: '8.3' # Đổi thành phiên bản PHP bạn đang dùng trên cPanel
+        php-version: '8.4' # Đổi thành phiên bản PHP bạn đang dùng trên cPanel
 
     - name: install Composer Dependencies
       run: composer install --optimize-autoloader --no-dev --no-progress
