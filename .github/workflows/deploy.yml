@@ -1,0 +1,48 @@
+name: Deploy Laravel to cPanel
+
+on:
+  push:
+    branches:
+      - dev # Hệ thống sẽ chạy khi bạn push code lên nhánh main
+
+jobs:
+  web-deploy:
+    name: Build & Deploy
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: get latest code
+      uses: actions/checkout@v3
+
+    - name: setup PHP
+      uses: shivammathur/setup-php@v2
+      with:
+        php-version: '8.3' # Đổi thành phiên bản PHP bạn đang dùng trên cPanel
+
+    - name: install Composer Dependencies
+      run: composer install --optimize-autoloader --no-dev --no-progress
+
+    - name: setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '22' # Đổi thành phiên bản Node bạn dùng cho React
+
+    - name: install NPM Dependencies & Build React
+      run: |
+        npm ci
+        npm run build
+        rm -rf node_modules # Xóa node_modules để không đẩy lên cPanel cho nhẹ
+
+    - name: sync files to cPanel via FTP
+      uses: SamKirkland/FTP-Deploy-Action@v4.3.4
+      with:
+        server: ${{ secrets.FTP_SERVER }}
+        username: ${{ secrets.FTP_USERNAME }}
+        password: ${{ secrets.FTP_PASSWORD }}
+        # Bỏ qua không ghi đè các file cấu hình và dữ liệu sinh ra trên server
+        exclude: |
+          **/.git*
+          **/.git*/**
+          .env
+          storage/**
+          node_modules/**
