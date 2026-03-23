@@ -35,14 +35,13 @@ jobs:
 
     - name: sync files to cPanel via FTP
       uses: SamKirkland/FTP-Deploy-Action@v4.3.4
-      with:
-        server: ${{ secrets.FTP_SERVER }}
-        username: ${{ secrets.FTP_USERNAME }}
-        password: ${{ secrets.FTP_PASSWORD }}
-        # Bỏ qua không ghi đè các file cấu hình và dữ liệu sinh ra trên server
-        exclude: |
+      exclude: |
           **/.git*
           **/.git*/**
           .env
           storage/**
           node_modules/**
+      with:
+        server: ${{ secrets.FTP_SERVER }}
+        username: ${{ secrets.FTP_USERNAME }}
+        password: ${{ secrets.FTP_PASSWORD }}
