@@ -2,6 +2,9 @@ import { createRoot } from 'react-dom/client';
 import { createInertiaApp } from '@inertiajs/react';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import React from 'react';
+import { ConfigProvider } from 'antd';
+import viVN from 'antd/locale/vi_VN';
+import theme from './Config/theme';
 
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
 
@@ -9,15 +12,19 @@ createInertiaApp({
   title: title => `${title} - ${appName}`,
   resolve: name =>
     resolvePageComponent(
-      `./Pages/${name}.tsx`,
+      [`./Pages/${name}.tsx`, `./Pages/Admin/${name}.tsx`, `./Pages/Tenant/${name}.tsx`],
       import.meta.glob('./Pages/**/*.tsx')
     ),
   setup({ el, App, props }) {
     const root = createRoot(el);
 
-    root.render(<App {...props} />);
+    root.render(
+      <ConfigProvider theme={theme} locale={viVN}>
+        <App {...props} />
+      </ConfigProvider>
+    );
   },
   progress: {
-    color: '#F87415'
+    color: '#7CB305'
   }
 });
