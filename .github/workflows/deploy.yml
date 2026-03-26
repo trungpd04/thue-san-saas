@@ -3,7 +3,7 @@ name: Deploy Laravel to cPanel
 on:
   push:
     branches:
-      - dev # Hệ thống sẽ chạy khi bạn push code lên nhánh main
+      - main # Hệ thống sẽ chạy khi bạn push code lên nhánh main
 
 jobs:
   web-deploy:
