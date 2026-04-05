@@ -12,7 +12,8 @@ return new class extends Migration
             $table->id();
             $table->foreignId('field_id')->constrained()->cascadeOnDelete();
             $table->foreignId('customer_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('time_slot_id')->constrained()->cascadeOnDelete();
+            $table->time('start_time');
+            $table->time('end_time');
             $table->tinyInteger('day_of_week');
             $table->date('start_date');
             $table->date('end_date')->nullable();

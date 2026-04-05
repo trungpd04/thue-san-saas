@@ -3,31 +3,21 @@
 namespace App\Models\Tenant;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class FieldPrice extends Model
 {
     protected $fillable = [
-        'field_id',
-        'time_slot_id',
+        'field_type_id',
+        'start_time',
+        'end_time',
         'day_type',
-        'price',
+        'price_per_hour',
     ];
 
     protected function casts(): array
     {
         return [
-            'price' => 'decimal:2',
+            'price_per_hour' => 'decimal:2',
         ];
-    }
-
-    public function field(): BelongsTo
-    {
-        return $this->belongsTo(Field::class);
-    }
-
-    public function timeSlot(): BelongsTo
-    {
-        return $this->belongsTo(TimeSlot::class);
     }
 }

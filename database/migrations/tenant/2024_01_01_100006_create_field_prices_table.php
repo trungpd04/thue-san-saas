@@ -10,13 +10,14 @@ return new class extends Migration
     {
         Schema::create('field_prices', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('field_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('time_slot_id')->constrained()->cascadeOnDelete();
+            $table->unsignedBigInteger('field_type_id')->index();
+            $table->time('start_time');
+            $table->time('end_time');
             $table->string('day_type')->default('weekday');
-            $table->decimal('price', 10, 2);
+            $table->decimal('price_per_hour', 10, 2);
             $table->timestamps();
 
-            $table->unique(['field_id', 'time_slot_id', 'day_type']);
+            $table->unique(['field_type_id', 'start_time', 'end_time', 'day_type']);
         });
     }
 
