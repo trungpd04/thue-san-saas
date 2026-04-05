@@ -1,4 +1,4 @@
-?php
+<?php
 
 namespace App\Models\Tenant;
 
@@ -6,39 +6,33 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-class RecurringBooking extends Model
+class FieldSpecialEvent extends Model
 {
+    public const EFFECT_BLOCK = 'block';
+
+    public const EFFECT_SURGE = 'surge';
+
     protected $fillable = [
         'field_id',
-        'customer_id',
+        'event_date',
         'start_time',
         'end_time',
-        'day_of_week',
-        'start_date',
-        'end_date',
-        'total_price',
-        'status',
+        'effect',
+        'surge_percent',
+        'title',
         'note',
     ];
 
     protected function casts(): array
     {
         return [
-            'start_date' => 'date',
-            'end_date' => 'date',
-            'total_price' => 'decimal:2',
-            'day_of_week' => 'integer',
+            'event_date' => 'date',
         ];
     }
 
     public function field(): BelongsTo
     {
         return $this->belongsTo(Field::class);
-    }
-
-    public function customer(): BelongsTo
-    {
-        return $this->belongsTo(Customer::class);
     }
 
     public function bookings(): HasMany

@@ -29,9 +29,9 @@ class Field extends Model
         return $this->belongsTo(FieldType::class);
     }
 
-    public function prices(): HasMany
+    public function priceRules(): HasMany
     {
-        return $this->hasMany(FieldPrice::class);
+        return $this->hasMany(FieldPrice::class, 'field_type_id', 'field_type_id');
     }
 
     public function bookings(): HasMany

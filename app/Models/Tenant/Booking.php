@@ -11,22 +11,28 @@ class Booking extends Model
     protected $fillable = [
         'field_id',
         'customer_id',
-        'time_slot_id',
         'recurring_booking_id',
         'booking_date',
         'start_time',
         'end_time',
+        'base_price',
+        'event_surcharge_amount',
         'total_price',
+        'pricing_breakdown',
         'status',
         'note',
         'booked_by',
+        'field_special_event_id',
     ];
 
     protected function casts(): array
     {
         return [
             'booking_date' => 'date',
+            'base_price' => 'decimal:2',
+            'event_surcharge_amount' => 'decimal:2',
             'total_price' => 'decimal:2',
+            'pricing_breakdown' => 'array',
         ];
     }
 
@@ -40,11 +46,6 @@ class Booking extends Model
         return $this->belongsTo(Customer::class);
     }
 
-    public function timeSlot(): BelongsTo
-    {
-        return $this->belongsTo(TimeSlot::class);
-    }
-
     public function recurringBooking(): BelongsTo
     {
         return $this->belongsTo(RecurringBooking::class);
@@ -53,6 +54,11 @@ class Booking extends Model
     public function bookedByStaff(): BelongsTo
     {
         return $this->belongsTo(Staff::class, 'booked_by');
+    }
+
+    public function fieldSpecialEvent(): BelongsTo
+    {
+        return $this->belongsTo(FieldSpecialEvent::class);
     }
 
     public function payments(): HasMany
