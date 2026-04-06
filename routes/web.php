@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\AuthenticatedSessionController;
+use App\Http\Controllers\Tenant\Auth\RegisteredTenantController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -10,6 +11,9 @@ Route::middleware('guest')->group(function () {
     Route::get('/admin/login', [AuthenticatedSessionController::class, 'create'])->name('admin.login');
     Route::post('/admin/login', [AuthenticatedSessionController::class, 'store'])
         ->middleware('throttle:5,1');
+
+    Route::get('/register', [RegisteredTenantController::class, 'create'])->name('tenant.register');
+    Route::post('/register', [RegisteredTenantController::class, 'store'])->middleware('throttle:10,1');
 });
 
 Route::post('/admin/logout', [AuthenticatedSessionController::class, 'destroy'])
