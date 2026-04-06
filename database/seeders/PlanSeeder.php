@@ -11,6 +11,13 @@ class PlanSeeder extends Seeder
     {
         $plans = [
             [
+                'name' => 'Free',
+                'max_fields' => 1,
+                'max_staff' => 1,
+                'price_monthly' => 0,
+                'price_yearly' => 0,
+            ],
+            [
                 'name' => 'Co ban',
                 'max_fields' => 3,
                 'max_staff' => 2,
