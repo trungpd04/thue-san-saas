@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
+use App\Http\Requests\Admin\LoginRequest;
+use App\Services\Auth\AdminAuthService;
 use Inertia\Inertia;
 use Inertia\Response;
 use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
@@ -17,43 +19,31 @@ class AuthenticatedSessionController extends Controller
         return Inertia::render('Admin/Login');
     }
 
-    public function store(Request $request): SymfonyResponse
+    public function store(LoginRequest $request, AdminAuthService $auth): SymfonyResponse
     {
-        $request->validate([
-            'email' => ['required', 'string', 'email'],
-            'password' => ['required', 'string'],
-        ]);
+        try {
+            $auth->attemptLogin(
+                $request->only('email', 'password'),
+                $request->boolean('remember')
+            );
+        } catch (ValidationException $e) {
+            if (Auth::check()) {
+                $auth->logout();
+                $request->session()->invalidate();
+                $request->session()->regenerateToken();
+            }
 
-        if (! Auth::attempt(
-            $request->only('email', 'password'),
-            $request->boolean('remember')
-        )) {
-            throw ValidationException::withMessages([
-                'email' => __('auth.failed'),
-            ]);
+            throw $e;
         }
 
         $request->session()->regenerate();
 
-        $user = Auth::user();
-
-        if (! $user->isAdmin() || ! $user->is_active) {
-            Auth::logout();
-
-            $request->session()->invalidate();
-            $request->session()->regenerateToken();
-
-            throw ValidationException::withMessages([
-                'email' => 'Tài khoản không có quyền truy cập khu vực quản trị.',
-            ]);
-        }
-
         return Inertia::location(redirect()->intended(route('admin.dashboard')));
     }
 
-    public function destroy(Request $request): SymfonyResponse
+    public function destroy(Request $request, AdminAuthService $auth): SymfonyResponse
     {
-        Auth::logout();
+        $auth->logout();
 
         $request->session()->invalidate();
         $request->session()->regenerateToken();
