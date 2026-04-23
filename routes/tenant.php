@@ -5,6 +5,8 @@ declare(strict_types=1);
 use Illuminate\Support\Facades\Route;
 use Stancl\Tenancy\Middleware\InitializeTenancyByDomain;
 use Stancl\Tenancy\Middleware\PreventAccessFromCentralDomains;
+use Inertia\Inertia;
+use App\Http\Controllers\Tenant\Auth\AuthenticatedTenantSessionController;
 
 /*
 |--------------------------------------------------------------------------
@@ -23,7 +25,16 @@ Route::middleware([
     InitializeTenancyByDomain::class,
     PreventAccessFromCentralDomains::class,
 ])->group(function () {
-    Route::get('/', function () {
-        return 'This is your multi-tenant application. The id of the current tenant is ' . tenant('id');
+    Route::middleware('guest:tenant')->prefix('tenant')->group(function () {
+        Route::get('/login', [AuthenticatedTenantSessionController::class, 'create'])->name('tenant.login');
+        Route::post('/login', [AuthenticatedTenantSessionController::class, 'store'])->middleware('throttle:10,1');
+    });
+
+    Route::post('/tenant/logout', [AuthenticatedTenantSessionController::class, 'destroy'])
+        ->middleware('auth:tenant')
+        ->name('tenant.logout');
+
+    Route::middleware('auth:tenant')->prefix('tenant')->group(function () {
+        Route::get('/dashboard', fn () => Inertia::render('Tenant/TenantDashboard'))->name('tenant.dashboard');
     });
 });

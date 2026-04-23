@@ -8,6 +8,7 @@ import {
     SettingOutlined,
     BellOutlined,
 } from '@ant-design/icons';
+import { router } from '@inertiajs/react';
 
 const { Header } = Layout;
 
@@ -32,6 +33,13 @@ interface TenantHeaderProps {
 }
 
 export default function TenantHeader({ collapsed, onToggle }: TenantHeaderProps) {
+    
+    const onUserMenuClick: MenuProps['onClick'] = ({ key }) => {
+        if (key === 'logout') {
+            router.post('/tenant/logout');
+        }
+    };
+    
     return (
         <Header style={{
             position: 'sticky',
@@ -58,7 +66,7 @@ export default function TenantHeader({ collapsed, onToggle }: TenantHeaderProps)
                     icon={<BellOutlined style={{ fontSize: 18 }} />}
                     style={{ width: 40, height: 40 }}
                 />
-                <Dropdown menu={{ items: userMenuItems }} placement="bottomRight" arrow>
+                <Dropdown menu={{ items: userMenuItems, onClick: onUserMenuClick }} placement="bottomRight" arrow>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
                         <Avatar style={{ background: '#7CB305' }} icon={<UserOutlined />} />
                         <Typography.Text strong>Tenant</Typography.Text>
