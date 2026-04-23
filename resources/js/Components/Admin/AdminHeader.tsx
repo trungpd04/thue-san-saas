@@ -1,3 +1,4 @@
+import { router } from '@inertiajs/react';
 import React from 'react';
 import { Layout, Typography, Avatar, Dropdown, Button, MenuProps } from 'antd';
 import {
@@ -32,6 +33,12 @@ interface AdminHeaderProps {
 }
 
 export default function AdminHeader({ collapsed, onToggle }: AdminHeaderProps) {
+    const onUserMenuClick: MenuProps['onClick'] = ({ key }) => {
+        if (key === 'logout') {
+            router.post('/admin/logout');
+        }
+    };
+
     return (
         <Header style={{
             position: 'sticky',
@@ -58,7 +65,7 @@ export default function AdminHeader({ collapsed, onToggle }: AdminHeaderProps) {
                     icon={<BellOutlined style={{ fontSize: 18 }} />}
                     style={{ width: 40, height: 40 }}
                 />
-                <Dropdown menu={{ items: userMenuItems }} placement="bottomRight" arrow>
+                <Dropdown menu={{ items: userMenuItems, onClick: onUserMenuClick }} placement="bottomRight" arrow>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
                         <Avatar style={{ background: '#7CB305' }} icon={<UserOutlined />} />
                         <Typography.Text strong>Admin</Typography.Text>
