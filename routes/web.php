@@ -28,4 +28,6 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
     Route::get('/tenant', function () {
         return Inertia::render('Tenant');
     })->name('admin.tenant');
+
+    require __DIR__ . '/subscription.php';
 });
