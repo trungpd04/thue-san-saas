@@ -7,9 +7,9 @@ use App\Enums\UserRole;
 use App\Models\Tenant;
 use App\Models\Tenant\Staff;
 use App\Models\User;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Stancl\Tenancy\Facades\Tenancy;
+use Throwable;
 
 class TenantRegistrationService
 {
@@ -21,9 +21,7 @@ class TenantRegistrationService
     {
         $baseDomain = $this->resolveBaseDomain();
         $domain = strtolower($data['slug']).'.'.$baseDomain;
-
-        /** @var array{tenant:Tenant,domain:string} $created */
-        $created = DB::transaction(function () use ($data, $domain) {
+        try {
             $tenant = Tenant::create([
                 'name' => $data['tenant_name'],
                 'phone' => $data['tenant_phone'] ?? null,
@@ -33,7 +31,7 @@ class TenantRegistrationService
 
             $tenant->domains()->create(['domain' => $domain]);
 
-            User::create([
+            $owner = User::create([
                 'name' => $data['owner_name'],
                 'email' => $data['owner_email'],
                 'password' => $data['owner_password'],
@@ -43,13 +41,8 @@ class TenantRegistrationService
                 'tenant_id' => $tenant->id,
             ]);
 
-            return ['tenant' => $tenant, 'domain' => $domain];
-        });
+            Tenancy::initialize($tenant);
 
-        $tenant = $created['tenant'];
-
-        Tenancy::initialize($tenant);
-        try {
             Staff::create([
                 'name' => $data['owner_name'],
                 'email' => $data['owner_email'],
@@ -58,6 +51,20 @@ class TenantRegistrationService
                 'role' => StaffRole::Manager,
                 'is_active' => true,
             ]);
+        } catch (Throwable $exception) {
+            if (isset($owner)) {
+                $owner->delete();
+            }
+
+            if (isset($tenant)) {
+                try {
+                    $tenant->delete();
+                } catch (Throwable $cleanupException) {
+                    report($cleanupException);
+                }
+            }
+
+            throw $exception;
         } finally {
             Tenancy::end();
         }
