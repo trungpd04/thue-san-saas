@@ -21,22 +21,22 @@ class AuthenticatedTenantSessionController extends Controller
 
     public function store(LoginRequest $request, TenantAuthService $auth): SymfonyResponse
     {
-        // try {
-        //     $auth->attemptLogin(
-        //         $request->only('email', 'password'),
-        //         $request->boolean('remember')
-        //     );
-        // } catch (ValidationException $e) {
-        //     if (Auth::guard('tenant')->check()) {
-        //         $auth->logout();
-        //         $request->session()->invalidate();
-        //         $request->session()->regenerateToken();
-        //     }
+        try {
+            $auth->attemptLogin(
+                $request->only('email', 'password'),
+                $request->boolean('remember')
+            );
+        } catch (ValidationException $e) {
+            if (Auth::guard('tenant')->check()) {
+                $auth->logout();
+                $request->session()->invalidate();
+                $request->session()->regenerateToken();
+            }
 
-        //     throw $e;
-        // }
+            throw $e;
+        }
 
-        // $request->session()->regenerate();
+        $request->session()->regenerate();
 
         return Inertia::location(redirect()->intended(route('tenant.dashboard')));
     }
