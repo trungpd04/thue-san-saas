@@ -36,8 +36,8 @@ return [
     ],
 
     'sepay' => [
-    'bank_account' => env('SEPAY_BANK_ACCOUNT'),
-    'bank_id' => env('SEPAY_BANK_ID'),
-    'account_name' => env('SEPAY_ACCOUNT_NAME'),
-],
+        'bank_account' => env('SEPAY_BANK_ACCOUNT'),
+        'bank_id' => env('SEPAY_BANK_ID'),
+        'account_name' => env('SEPAY_ACCOUNT_NAME'),
+    ],
 ];
