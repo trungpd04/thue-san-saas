@@ -7,6 +7,8 @@ use Stancl\Tenancy\Middleware\InitializeTenancyByDomain;
 use Stancl\Tenancy\Middleware\PreventAccessFromCentralDomains;
 use Inertia\Inertia;
 use App\Http\Controllers\Tenant\Auth\AuthenticatedTenantSessionController;
+use App\Http\Controllers\Tenant\Auth\RegisteredTenantController;
+use App\Http\Controllers\Tenant\SubscriptionRegistrationController;
 
 /*
 |--------------------------------------------------------------------------
@@ -35,6 +37,15 @@ Route::middleware([
         ->name('tenant.logout');
 
     Route::middleware('auth:tenant')->prefix('tenant')->group(function () {
-        Route::get('/dashboard', fn () => Inertia::render('Tenant/TenantDashboard'))->name('tenant.dashboard');
+        Route::get('/dashboard', fn() => Inertia::render('Tenant/TenantDashboard'))->name('tenant.dashboard');
+
+        // Trang chọn gói và thanh toán
+        Route::get('/subscription/register', [SubscriptionRegistrationController::class, 'index'])->name('tenant.subscription.index');
+
+        // Xử lý đăng ký (Đã có method register trong controller của bạn)
+        Route::post('/subscription/register', [SubscriptionRegistrationController::class, 'register'])->name('tenant.subscription.register');
+
+        // Trang xem lịch sử/trạng thái thanh toán
+        Route::get('/subscription/status', [SubscriptionRegistrationController::class, 'status'])->name('tenant.subscription.status');
     });
 });

@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Subscription extends Model
 {
+    protected $connection = 'mysql';
     protected $fillable = [
         'tenant_id',
         'plan_id',
