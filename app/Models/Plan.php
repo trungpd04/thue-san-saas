@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Plan extends Model
 {
+    protected $connection = 'mysql'; 
     protected $fillable = [
         'name',
         'max_fields',

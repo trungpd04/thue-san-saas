@@ -4,6 +4,7 @@ namespace App\Services\Tenant;
 
 use App\Enums\StaffRole;
 use App\Enums\UserRole;
+use App\Models\Subscription;
 use App\Models\Tenant;
 use App\Models\Tenant\Staff;
 use App\Models\User;
@@ -36,6 +37,14 @@ class TenantRegistrationService
                 'phone' => $data['tenant_phone'] ?? null,
                 'is_active' => true,
                 'tenant_id' => $tenant->id,
+            ]);
+
+            Subscription::create([
+                'tenant_id' => $tenant->id,
+                'plan_id' => 1,
+                'status' => 'active',
+                'trial_ends_at' => now()->addDays(30),
+                'starts_at' => now(),
             ]);
 
             Tenancy::initialize($tenant);
