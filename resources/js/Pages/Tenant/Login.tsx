@@ -18,7 +18,6 @@ export default function Login() {
     const [form] = Form.useForm();
     const [processing, setProcessing] = useState(false);
     const loginPath = tenancy?.tenant?.slug ? `/tenant/${tenancy.tenant.slug}/login` : window.location.pathname;
-
     const onFinish = (values: { email: string; password: string; remember?: boolean }) => {
         router.post(
             loginPath,

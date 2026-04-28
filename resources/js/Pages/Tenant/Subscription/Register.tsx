@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import { Head } from "@inertiajs/react";
-import { Card, Button, Row, Col, Typography, Tag, Space, Divider, InputNumber, Steps, Result, Alert, message } from "antd";
-import { CheckCircleOutlined, CreditCardOutlined, InfoCircleOutlined, CopyOutlined, CheckOutlined } from "@ant-design/icons";
+import { Head, usePage } from "@inertiajs/react";
+import { Card, Button, Row, Col, Typography, Tag, Space, Divider, InputNumber, Steps, Alert } from "antd";
+import { CheckCircleOutlined, CreditCardOutlined, CopyOutlined, CheckOutlined } from "@ant-design/icons";
 import TenantLayout from "@/Layout/Tenant/TenantLayout";
 import axios from 'axios';
-import { App, message as antMessage } from 'antd';
+import { App } from 'antd';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -16,12 +16,22 @@ interface Plan {
     max_staff: number;
 }
 
+type RegisterPageProps = {
+    tenancy?: {
+        tenant?: {
+            slug?: string;
+        } | null;
+    };
+};
+
 export default function Register({ plans = [], currentSubscription }: { plans: Plan[], currentSubscription: any }) {
+    const { tenancy } = usePage<RegisterPageProps>().props;
     const [currentStep, setCurrentStep] = useState(0);
     const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null);
     const [months, setMonths] = useState(1);
     const [loading, setLoading] = useState(false);
     const [paymentInfo, setPaymentInfo] = useState<any>(null);
+    const tenantBasePath = tenancy?.tenant?.slug ? `/tenant/${tenancy.tenant.slug}` : '/tenant';
 
     const formatCurrency = (amount: number) => {
         return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
@@ -32,7 +42,7 @@ export default function Register({ plans = [], currentSubscription }: { plans: P
         setSelectedPlan(plan);
         setLoading(true);
         try {
-            const response = await axios.post('/tenant/subscription/register', {
+            const response = await axios.post(`${tenantBasePath}/subscription/register`, {
                 plan_id: plan.id,
                 months: months
             });
@@ -190,7 +200,7 @@ export default function Register({ plans = [], currentSubscription }: { plans: P
                                     <Button 
                                         type="primary" 
                                         icon={<CheckOutlined />}
-                                        onClick={() => window.location.href = '/tenant/subscription/status'}
+                                        onClick={() => window.location.href = `${tenantBasePath}/subscription/status`}
                                         block
                                     >
                                         Đã chuyển khoản

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Layout, Menu, Typography, MenuProps } from 'antd';
-import { DashboardOutlined, UserOutlined, CalendarOutlined } from '@ant-design/icons';
+import { CalendarOutlined, CreditCardOutlined, DashboardOutlined, UserOutlined } from '@ant-design/icons';
 import { Link, usePage } from '@inertiajs/react';
 
 const { Sider } = Layout;
@@ -32,6 +32,11 @@ export default function TenantSidebar({ collapsed }: TenantSidebarProps) {
             key: `${base}/booking`,
             icon: <CalendarOutlined />,
             label: <Link href={`${base}/booking`}>Đặt sân</Link>,
+        },
+        {
+            key: `${base}/subscription/register`,
+            icon: <CreditCardOutlined />,
+            label: <Link href={`${base}/subscription/register`}>Đăng ký gói</Link>,
         },
     ];
 

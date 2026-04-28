@@ -35,11 +35,11 @@ interface TenantHeaderProps {
 export default function TenantHeader({ collapsed, onToggle }: TenantHeaderProps) {
     const { props } = usePage<any>();
     const slug = props.tenancy?.tenant?.slug;
+    const tenantBasePath = slug ? `/tenant/${slug}` : '/tenant';
     
     const onUserMenuClick: MenuProps['onClick'] = ({ key }) => {
         if (key === 'logout') {
-            const logoutPath = slug ? `/tenant/${slug}/logout` : '/tenant/logout';
-            router.post(logoutPath);
+            router.post(`${tenantBasePath}/logout`);
         }
     };
     
