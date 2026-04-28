@@ -5,9 +5,12 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Stancl\Tenancy\Database\Concerns\BelongsToTenant;
 
 class Subscription extends Model
 {
+    use BelongsToTenant;
+
     protected $fillable = [
         'tenant_id',
         'plan_id',
@@ -24,11 +27,6 @@ class Subscription extends Model
             'starts_at' => 'datetime',
             'ends_at' => 'datetime',
         ];
-    }
-
-    public function tenant(): BelongsTo
-    {
-        return $this->belongsTo(Tenant::class);
     }
 
     public function plan(): BelongsTo
