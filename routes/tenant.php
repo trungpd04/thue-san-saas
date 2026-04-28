@@ -30,11 +30,11 @@ Route::middleware([InitializeTenancyBySlug::class])
                 ->middleware('throttle:10,1');
         });
 
-    Route::post('/tenant/logout', [AuthenticatedTenantSessionController::class, 'destroy'])
+    Route::post('/logout', [AuthenticatedTenantSessionController::class, 'destroy'])
         ->middleware('auth:tenant')
         ->name('tenant.logout');
 
-    Route::middleware('auth:tenant')->prefix('tenant')->group(function () {
+    Route::middleware('auth:tenant')->group(function () {
         Route::get('/dashboard', fn() => Inertia::render('Tenant/TenantDashboard'))->name('tenant.dashboard');
 
         // Trang chọn gói và thanh toán

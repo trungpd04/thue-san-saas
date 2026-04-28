@@ -1,5 +1,5 @@
 import React from 'react';
-import { Head, Link } from "@inertiajs/react";
+import { Head, Link, usePage } from "@inertiajs/react";
 import { Card, Table, Typography, Tag, Space, Button, Breadcrumb } from "antd";
 import { ClockCircleOutlined, CheckCircleOutlined, CloseCircleOutlined, ArrowLeftOutlined } from "@ant-design/icons";
 import TenantLayout from "@/Layout/Tenant/TenantLayout";
@@ -28,7 +28,18 @@ interface Payment {
     created_at: string;
 }
 
+type StatusPageProps = {
+    tenancy?: {
+        tenant?: {
+            slug?: string;
+        } | null;
+    };
+};
+
 export default function Status({ payments = [] }: { payments: Payment[] }) {
+    const { tenancy } = usePage<StatusPageProps>().props;
+    const tenantBasePath = tenancy?.tenant?.slug ? `/tenant/${tenancy.tenant.slug}` : '/tenant';
+
     const formatCurrency = (amount: number) => {
         return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
     };
@@ -92,15 +103,15 @@ export default function Status({ payments = [] }: { payments: Payment[] }) {
 
             <div style={{ marginBottom: 24 }}>
                 <Breadcrumb items={[
-                    { title: <Link href="/tenant/dashboard">Dashboard</Link> },
-                    { title: <Link href="/tenant/subscription/register">Gói dịch vụ</Link> },
+                    { title: <Link href={`${tenantBasePath}/dashboard`}>Dashboard</Link> },
+                    { title: <Link href={`${tenantBasePath}/subscription/register`}>Gói dịch vụ</Link> },
                     { title: 'Lịch sử thanh toán' },
                 ]} />
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
                 <Title level={2} style={{ margin: 0 }}>Lịch sử thanh toán</Title>
-                <Link href="/tenant/subscription/register">
+                <Link href={`${tenantBasePath}/subscription/register`}>
                     <Button icon={<ArrowLeftOutlined />}>Quay lại đăng ký</Button>
                 </Link>
             </div>
