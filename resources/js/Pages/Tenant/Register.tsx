@@ -16,7 +16,7 @@ export default function Register() {
     const slugExtra = useMemo(() => {
         return (
             <Typography.Text type="secondary">
-                Slug sẽ được ghép thành subdomain (vd: <Typography.Text code>acme</Typography.Text>).
+                Slug sẽ được dùng trong URL (vd: <Typography.Text code>/tenant/acme/...</Typography.Text>).
             </Typography.Text>
         );
     }, []);

@@ -10,6 +10,7 @@ return new class extends Migration
     {
         Schema::create('payments', function (Blueprint $table) {
             $table->id();
+            $table->string('tenant_id');
             $table->foreignId('booking_id')->constrained()->cascadeOnDelete();
             $table->foreignId('customer_id')->constrained()->cascadeOnDelete();
             $table->decimal('amount', 10, 2);
@@ -18,6 +19,8 @@ return new class extends Migration
             $table->timestamp('paid_at')->nullable();
             $table->text('note')->nullable();
             $table->timestamps();
+
+            $table->foreign('tenant_id')->references('id')->on('tenants')->onUpdate('cascade')->onDelete('cascade');
         });
     }
 

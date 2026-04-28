@@ -6,8 +6,6 @@ use Illuminate\Database\Eloquent\Model;
 
 class FieldType extends Model
 {
-    protected $connection = 'mysql';
-
     protected $fillable = [
         'name',
         'sport',
