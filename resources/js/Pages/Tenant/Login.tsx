@@ -6,16 +6,21 @@ const GREEN_MA = '#7CB305';
 
 type LoginPageProps = {
     errors?: Record<string, string | string[] | undefined>;
+    tenancy?: {
+        tenant?: {
+            slug?: string;
+        } | null;
+    };
 };
 
 export default function Login() {
-    const { errors = {} } = usePage<LoginPageProps>().props;
+    const { errors = {}, tenancy } = usePage<LoginPageProps>().props;
     const [form] = Form.useForm();
     const [processing, setProcessing] = useState(false);
-
+    const loginPath = tenancy?.tenant?.slug ? `/tenant/${tenancy.tenant.slug}/login` : window.location.pathname;
     const onFinish = (values: { email: string; password: string; remember?: boolean }) => {
         router.post(
-            '/tenant/login',
+            loginPath,
             {
                 email: values.email,
                 password: values.password,

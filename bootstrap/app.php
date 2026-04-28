@@ -23,12 +23,15 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
 
         $middleware->redirectGuestsTo(function (Request $request) {
-            return tenancy()->initialized ? route('tenant.login') : route('admin.login');
+            if (tenancy()->initialized) {
+                return route('tenant.login', ['tenant' => tenant()->slug]);
+            }
+            return route('admin.login');
         });
 
         $middleware->redirectUsersTo(function (Request $request) {
             if (tenancy()->initialized && auth('tenant')->check()) {
-                return route('tenant.dashboard');
+                return route('tenant.dashboard', ['tenant' => tenant()->slug]);
             }
 
             return route('admin.dashboard');

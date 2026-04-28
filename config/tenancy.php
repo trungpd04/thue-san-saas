@@ -2,24 +2,13 @@
 
 declare(strict_types=1);
 
-use App\Models\Domain;
 use App\Models\Tenant;
 
 return [
     'tenant_model' => Tenant::class,
     'id_generator' => Stancl\Tenancy\UUIDGenerator::class,
 
-    'domain_model' => Domain::class,
-
-    /**
-     * The list of domains hosting your central app.
-     *
-     * Only relevant if you're using the domain or subdomain identification middleware.
-     */
-    'central_domains' => [
-        '127.0.0.1',
-        'localhost',
-    ],
+    'central_domains' => [],
 
     /**
      * Tenancy bootstrappers are executed when tenancy is initialized.
@@ -27,13 +16,7 @@ return [
      *
      * To configure their behavior, see the config keys below.
      */
-    'bootstrappers' => [
-        Stancl\Tenancy\Bootstrappers\DatabaseTenancyBootstrapper::class,
-        Stancl\Tenancy\Bootstrappers\CacheTenancyBootstrapper::class,
-        Stancl\Tenancy\Bootstrappers\FilesystemTenancyBootstrapper::class,
-        Stancl\Tenancy\Bootstrappers\QueueTenancyBootstrapper::class,
-        // Stancl\Tenancy\Bootstrappers\RedisTenancyBootstrapper::class, // Note: phpredis is needed
-    ],
+    'bootstrappers' => [],
 
     /**
      * Database tenancy config. Used by DatabaseTenancyBootstrapper.
@@ -181,20 +164,10 @@ return [
      */
     'routes' => true,
 
-    /**
-     * Parameters used by the tenants:migrate command.
-     */
-    'migration_parameters' => [
-        '--force' => true, // This needs to be true to run migrations in production.
-        '--path' => [database_path('migrations/tenant')],
-        '--realpath' => true,
-    ],
+    'migration_parameters' => [],
 
     /**
      * Parameters used by the tenants:seed command.
      */
-    'seeder_parameters' => [
-        '--class' => 'Database\\Seeders\\TenantDatabaseSeeder',
-        // '--force' => true,
-    ],
+    'seeder_parameters' => [],
 ];

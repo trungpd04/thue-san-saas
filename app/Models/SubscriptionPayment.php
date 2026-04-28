@@ -4,9 +4,12 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Stancl\Tenancy\Database\Concerns\BelongsToTenant;
 
 class SubscriptionPayment extends Model
 {
+    use BelongsToTenant;
+
     protected $fillable = [
         'tenant_id',
         'subscription_id',
@@ -28,11 +31,6 @@ class SubscriptionPayment extends Model
             'billing_period_end' => 'date',
             'paid_at' => 'datetime',
         ];
-    }
-
-    public function tenant(): BelongsTo
-    {
-        return $this->belongsTo(Tenant::class);
     }
 
     public function subscription(): BelongsTo

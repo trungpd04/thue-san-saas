@@ -18,7 +18,13 @@ class RegisterTenantRequest extends FormRequest
             'tenant_name' => ['required', 'string', 'max:255'],
             'tenant_phone' => ['nullable', 'string', 'max:30'],
             'tenant_address' => ['nullable', 'string', 'max:1000'],
-            'slug' => ['required', 'string', 'max:63', 'regex:/^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/i'],
+            'slug' => [
+                'required',
+                'string',
+                'max:63',
+                'regex:/^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/i',
+                Rule::unique('tenants', 'slug'),
+            ],
 
             'owner_name' => ['required', 'string', 'max:255'],
             'owner_email' => ['required', 'string', 'email', 'max:255', Rule::unique('users', 'email')],

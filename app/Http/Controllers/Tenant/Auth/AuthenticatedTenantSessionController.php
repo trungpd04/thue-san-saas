@@ -38,7 +38,7 @@ class AuthenticatedTenantSessionController extends Controller
 
         $request->session()->regenerate();
 
-        return Inertia::location(redirect()->intended(route('tenant.dashboard')));
+        return redirect()->intended(route('tenant.dashboard', ['tenant' => tenant()->slug]));
     }
 
     public function destroy(Request $request, TenantAuthService $auth): SymfonyResponse
@@ -48,7 +48,7 @@ class AuthenticatedTenantSessionController extends Controller
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        return Inertia::location(route('tenant.login'));
+        return redirect()->route('tenant.login', ['tenant' => tenant()->slug]);
     }
 }
 

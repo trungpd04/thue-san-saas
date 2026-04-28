@@ -5,12 +5,16 @@ namespace App\Models\Tenant;
 use App\Enums\StaffRole;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
+use Stancl\Tenancy\Database\Concerns\BelongsToTenant;
 
 class Staff extends Authenticatable
 {
+    use BelongsToTenant;
+
     protected $table = 'staff';
 
     protected $fillable = [
+        'tenant_id',
         'name',
         'email',
         'phone',
