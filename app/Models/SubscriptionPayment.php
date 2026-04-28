@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class SubscriptionPayment extends Model
 {
+    protected $connection = 'mysql';
     protected $fillable = [
         'tenant_id',
         'subscription_id',
