@@ -5,14 +5,18 @@ namespace App\Models\Tenant;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Stancl\Tenancy\Database\Concerns\BelongsToTenant;
 
 class FieldSpecialEvent extends Model
 {
+    use BelongsToTenant;
+
     public const EFFECT_BLOCK = 'block';
 
     public const EFFECT_SURGE = 'surge';
 
     protected $fillable = [
+        'tenant_id',
         'field_id',
         'event_date',
         'start_time',

@@ -8,7 +8,7 @@ import {
     SettingOutlined,
     BellOutlined,
 } from '@ant-design/icons';
-import { router } from '@inertiajs/react';
+import { router, usePage } from '@inertiajs/react';
 
 const { Header } = Layout;
 
@@ -33,10 +33,13 @@ interface TenantHeaderProps {
 }
 
 export default function TenantHeader({ collapsed, onToggle }: TenantHeaderProps) {
+    const { props } = usePage<any>();
+    const slug = props.tenancy?.tenant?.slug;
     
     const onUserMenuClick: MenuProps['onClick'] = ({ key }) => {
         if (key === 'logout') {
-            router.post('/tenant/logout');
+            const logoutPath = slug ? `/tenant/${slug}/logout` : '/tenant/logout';
+            router.post(logoutPath);
         }
     };
     

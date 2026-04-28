@@ -7,31 +7,35 @@ const { Sider } = Layout;
 
 type MenuItem = Required<MenuProps>['items'][number];
 
-const menuItems: MenuItem[] = [
-    {
-        key: '/tenant/dashboard',
-        icon: <DashboardOutlined />,
-        label: <Link href="/tenant/dashboard">Tổng quan</Link>,
-    },
-    {
-        key: '/tenant/customer',
-        icon: <UserOutlined />,
-        label: <Link href="/tenant/customer">Khách hàng</Link>,
-    },
-    {
-        key: '/tenant/booking',
-        icon: <CalendarOutlined />,
-        label: <Link href="/tenant/booking">Đặt sân</Link>,
-    },
-];
-
 interface TenantSidebarProps {
     collapsed: boolean;
 }
 
 export default function TenantSidebar({ collapsed }: TenantSidebarProps) {
-    const { url } = usePage();
-    const activeKey = '/' + url.split('/').slice(1, 3).join('/');
+    const { url, props } = usePage<any>();
+    const { tenancy } = props;
+    const slug = tenancy?.tenant?.slug;
+    const base = slug ? `/tenant/${slug}` : '/tenant';
+
+    const menuItems: MenuItem[] = [
+        {
+            key: `${base}/dashboard`,
+            icon: <DashboardOutlined />,
+            label: <Link href={`${base}/dashboard`}>Tổng quan</Link>,
+        },
+        {
+            key: `${base}/customer`,
+            icon: <UserOutlined />,
+            label: <Link href={`${base}/customer`}>Khách hàng</Link>,
+        },
+        {
+            key: `${base}/booking`,
+            icon: <CalendarOutlined />,
+            label: <Link href={`${base}/booking`}>Đặt sân</Link>,
+        },
+    ];
+
+    const activeKey = url; // Simplified for now
 
     return (
         <Sider

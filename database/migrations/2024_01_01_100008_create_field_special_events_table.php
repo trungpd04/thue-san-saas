@@ -10,6 +10,7 @@ return new class extends Migration
     {
         Schema::create('field_special_events', function (Blueprint $table) {
             $table->id();
+            $table->string('tenant_id');
             $table->foreignId('field_id')->nullable()->constrained()->nullOnDelete();
             $table->date('event_date');
             $table->time('start_time');
@@ -20,6 +21,7 @@ return new class extends Migration
             $table->text('note')->nullable();
             $table->timestamps();
 
+            $table->foreign('tenant_id')->references('id')->on('tenants')->onUpdate('cascade')->onDelete('cascade');
             $table->index(['field_id', 'event_date']);
         });
     }

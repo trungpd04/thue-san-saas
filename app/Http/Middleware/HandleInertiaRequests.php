@@ -37,7 +37,15 @@ class HandleInertiaRequests extends Middleware
     {
         return [
             ...parent::share($request),
-            //
+            'auth.user' => $request->user(),
+            'tenancy' => [
+                'initialized' => tenancy()->initialized,
+                'tenant' => tenancy()->initialized ? [
+                    'id' => tenant()->id,
+                    'name' => tenant()->name,
+                    'slug' => tenant()->slug,
+                ] : null,
+            ],
         ];
     }
 }

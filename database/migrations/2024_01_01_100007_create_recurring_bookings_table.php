@@ -10,6 +10,7 @@ return new class extends Migration
     {
         Schema::create('recurring_bookings', function (Blueprint $table) {
             $table->id();
+            $table->string('tenant_id');
             $table->foreignId('field_id')->constrained()->cascadeOnDelete();
             $table->foreignId('customer_id')->constrained()->cascadeOnDelete();
             $table->time('start_time');
@@ -21,6 +22,8 @@ return new class extends Migration
             $table->string('status')->default('active');
             $table->text('note')->nullable();
             $table->timestamps();
+
+            $table->foreign('tenant_id')->references('id')->on('tenants')->onUpdate('cascade')->onDelete('cascade');
         });
     }
 
