@@ -1,6 +1,6 @@
 import React from 'react';
 import { Layout, Menu, Typography, MenuProps } from 'antd';
-import { DashboardOutlined, UserOutlined, TeamOutlined } from '@ant-design/icons';
+import { DashboardOutlined, UserOutlined, TeamOutlined, TagsOutlined} from '@ant-design/icons';
 import { Link, usePage } from '@inertiajs/react';
 
 const { Sider } = Layout;
@@ -17,6 +17,11 @@ const menuItems: MenuItem[] = [
         key: '/admin/tenant-management',
         icon: <TeamOutlined />,
         label: <Link href="/admin/tenant-management">Quản lí Tenant</Link>,
+    },
+    {
+        key: '/admin/plans',
+        icon: <TagsOutlined />,
+        label: <Link href="/admin/plans">Quản lí Plans</Link>,
     }
 ];
 
