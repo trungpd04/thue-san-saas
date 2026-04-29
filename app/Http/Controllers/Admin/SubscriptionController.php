@@ -16,8 +16,9 @@ class SubscriptionController extends Controller
     /**
      * Hiển thị trang quản lý gói cước cho một Tenant cụ thể
      */
-    public function index(Tenant $tenant)
+    public function index(String $slug)
     {
+        $tenant = Tenant::where('slug', $slug)->firstOrFail();
         $plans = Plan::where('is_active', true)->get();
 
         // Lấy gói cước hiện tại của tenant
@@ -37,13 +38,16 @@ class SubscriptionController extends Controller
     /**
      * Gán gói cước cho Tenant
      */
-    public function store(Request $request, Tenant $tenant)
+    public function store(Request $request, String $slug)
     {
         $request->validate([
             'plan_id' => 'required|exists:plans,id',
+            'months' => 'required|integer|min:1|max:36',
         ]);
-
+        
+        $tenant = Tenant::where('slug', $slug)->firstOrFail();
         $plan = Plan::findOrFail($request->plan_id);
+        $months = (int) $request->months;
 
         try {
             DB::beginTransaction();
@@ -59,43 +63,43 @@ class SubscriptionController extends Controller
                 'plan_id' => $plan->id,
                 'status' => 'active',
                 'starts_at' => now(),
-                'ends_at' => now()->addMonth(),
+                'ends_at' => now()->addMonths($months),
             ]);
 
             DB::commit();
-            return redirect()->back()->with('success', "Đã gán gói {$plan->name} cho tenant thành công.");
+            return redirect()->back()->with('success', "Đã gán gói {$plan->name} ({$months} tháng) cho tenant thành công.");
         } catch (\Exception $e) {
             DB::rollback();
             return redirect()->back()->with('error', 'Có lỗi xảy ra khi gán gói cước: ' . $e->getMessage());
         }
     }
 
-    public function approve(Request $request, $paymentId)
-    {
-        $payment = SubscriptionPayment::findOrFail($paymentId);
+    // public function approve(Request $request, $paymentId)
+    // {
+    //     $payment = SubscriptionPayment::findOrFail($paymentId);
 
-        if ($payment->status === 'success') {
-            return back()->with('error', 'Giao dịch này đã được xử lý trước đó.');
-        }
+    //     if ($payment->status === 'success') {
+    //         return back()->with('error', 'Giao dịch này đã được xử lý trước đó.');
+    //     }
 
-        DB::transaction(function () use ($payment) {
-            // 1. Cập nhật trạng thái thanh toán
-            $payment->update([
-                'status' => 'success',
-                'paid_at' => now(),
-                'note' => $payment->note . " | Admin xác nhận lúc: " . now(),
-            ]);
+    //     DB::transaction(function () use ($payment) {
+    //         // 1. Cập nhật trạng thái thanh toán
+    //         $payment->update([
+    //             'status' => 'success',
+    //             'paid_at' => now(),
+    //             'note' => $payment->note . " | Admin xác nhận lúc: " . now(),
+    //         ]);
 
-            // 2. Kích hoạt Subscription tương ứng
-            $subscription = $payment->subscription;
-            $subscription->update([
-                'status' => 'active',
-                // Có thể cập nhật lại ngày bắt đầu từ lúc Admin duyệt nếu muốn
-                // 'starts_at' => now(), 
-                // 'ends_at' => now()->addMonths($months_count),
-            ]);
-        });
+    //         // 2. Kích hoạt Subscription tương ứng
+    //         $subscription = $payment->subscription;
+    //         $subscription->update([
+    //             'status' => 'active',
+    //             // Có thể cập nhật lại ngày bắt đầu từ lúc Admin duyệt nếu muốn
+    //             // 'starts_at' => now(), 
+    //             // 'ends_at' => now()->addMonths($months_count),
+    //         ]);
+    //     });
 
-        return back()->with('success', 'Thanh toán thành công. Gói dịch vụ đã được kích hoạt.');
-    }
+    //     return back()->with('success', 'Thanh toán thành công. Gói dịch vụ đã được kích hoạt.');
+    // }
 }
