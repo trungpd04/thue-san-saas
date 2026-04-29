@@ -16,12 +16,12 @@ const menuItems: MenuItem[] = [
     {
         key: '/admin/tenant-management',
         icon: <TeamOutlined />,
-        label: <Link href="/admin/tenant-management">Quản lí Tenant</Link>,
+        label: <Link href="/admin/tenant-management">Quản lí chủ sân</Link>,
     },
     {
         key: '/admin/plans',
         icon: <TagsOutlined />,
-        label: <Link href="/admin/plans">Quản lí Plans</Link>,
+        label: <Link href="/admin/plans">Quản lí gói dịch vụ</Link>,
     }
 ];
 

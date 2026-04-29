@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { Typography, Card, Table, Tag, Button, Modal, Form, Input, InputNumber, Switch, Space, Popconfirm, message } from 'antd';
+import { Typography, Card, Table, Tag, Button, Modal, Form, Input, InputNumber, Switch, Space, Popconfirm, message, Row, Col } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import { useForm, router } from '@inertiajs/react';
 import AdminLayout from '@/Layout/Admin/AdminLayout'; // Đường dẫn import Layout của team bạn
+import { formatVND, parseVND } from '@/utils/currency';
 
 const { Title } = Typography;
 
@@ -29,8 +30,6 @@ export default function Index({ plans }: PageProps) {
     const { data, setData, post, put, processing, reset, errors } = useForm({
         name: '', max_fields: 1, max_staff: 1, price_monthly: 0, price_yearly: 0, is_active: true
     });
-
-    const formatVND = (value: number) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(value);
 
     const openModal = (plan: Plan | null = null) => {
         setEditingPlan(plan);
@@ -92,12 +91,16 @@ export default function Index({ plans }: PageProps) {
             )
         }
     ];
+    
+    const validateMessages = {
+        required: 'Vui lòng nhập ${label}',
+    };
 
     return (
         <AdminLayout>
             <div style={{ padding: '20px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 20 }}>
-                    <Title level={3}>Quản Lý Gói Dịch Vụ (Plans)</Title>
+                    <Title level={3}>Quản Lý Gói Dịch Vụ</Title>
                     <Button type="primary" icon={<PlusOutlined />} onClick={() => openModal()}>
                         Thêm Gói Mới
                     </Button>
@@ -115,28 +118,50 @@ export default function Index({ plans }: PageProps) {
                     confirmLoading={processing}
                     width={600}
                 >
-                    <Form form={form} layout="vertical" onFinish={handleSubmit}>
+                    <Form form={form} layout="vertical" onFinish={handleSubmit} validateMessages={validateMessages} >
                         <Form.Item label="Tên Gói Dịch Vụ" name="name" rules={[{ required: true }]}>
                             <Input value={data.name} onChange={e => setData('name', e.target.value)} />
                         </Form.Item>
                         
-                        <Space style={{ display: 'flex', marginBottom: 16 }} align="baseline">
-                            <Form.Item label="Giới hạn Sân bóng" name="max_fields" rules={[{ required: true }]}>
-                                <InputNumber min={1} value={data.max_fields} onChange={val => setData('max_fields', val ?? 1)} />
-                            </Form.Item>
-                            <Form.Item label="Giới hạn Nhân viên" name="max_staff" rules={[{ required: true }]}>
-                                <InputNumber min={1} value={data.max_staff} onChange={val => setData('max_staff', val ?? 1)} />
-                            </Form.Item>
-                        </Space>
+                        <Row gutter={16}>
+                            <Col span={12}>
+                                <Form.Item label="Giới hạn Sân" name="max_fields" rules={[{ required: true }]}>
+                                    <InputNumber min={1} value={data.max_fields} onChange={val => setData('max_fields', val ?? 1)} style={{ width: '100%' }} />
+                                </Form.Item>
+                            </Col>
+                            <Col span={12}>
+                                <Form.Item label="Giới hạn Nhân viên" name="max_staff" rules={[{ required: true }]}>
+                                    <InputNumber min={1} value={data.max_staff} onChange={val => setData('max_staff', val ?? 1)} style={{ width: '100%' }} />
+                                </Form.Item>
+                            </Col>
+                        </Row>
 
-                        <Space style={{ display: 'flex', marginBottom: 16 }} align="baseline">
-                            <Form.Item label="Giá Tháng (VNĐ)" name="price_monthly" rules={[{ required: true }]}>
-                                <InputNumber min={0} value={data.price_monthly} onChange={val => setData('price_monthly', val ?? 0)} style={{ width: 180 }} />
-                            </Form.Item>
-                            <Form.Item label="Giá Năm (VNĐ)" name="price_yearly" rules={[{ required: true }]}>
-                                <InputNumber min={0} value={data.price_yearly} onChange={val => setData('price_yearly', val ?? 0)} style={{ width: 180 }} />
-                            </Form.Item>
-                        </Space>
+                        <Row gutter={16}>
+                            <Col span={12}>
+                                <Form.Item label="Giá Tháng (VNĐ)" name="price_monthly" rules={[{ required: true }]}>
+                                    <InputNumber
+                                        min={0}
+                                        value={data.price_monthly}
+                                        formatter={value => formatVND(value)}
+                                        parser={parseVND}
+                                        onChange={val => setData('price_monthly', val ?? 0)}
+                                        style={{ width: '100%' }}
+                                    />
+                                </Form.Item>
+                            </Col>
+                            <Col span={12}>
+                                <Form.Item label="Giá Năm (VNĐ)" name="price_yearly" rules={[{ required: true }]}>
+                                    <InputNumber
+                                        min={0}
+                                        value={data.price_yearly}
+                                        formatter={value => formatVND(value)}
+                                        parser={parseVND}
+                                        onChange={val => setData('price_yearly', val ?? 0)}
+                                        style={{ width: '100%' }}
+                                    />
+                                </Form.Item>
+                            </Col>
+                        </Row>
 
                         <Form.Item label="Trạng thái" name="is_active" valuePropName="checked">
                             <Switch checked={data.is_active} onChange={checked => setData('is_active', checked)} />
