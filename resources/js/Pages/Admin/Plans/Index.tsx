@@ -121,7 +121,7 @@ export default function Index({ plans }: PageProps) {
                         </Form.Item>
                         
                         <Space style={{ display: 'flex', marginBottom: 16 }} align="baseline">
-                            <Form.Item label="Giới hạn Sân bóng" name="max_fields" rules={[{ required: true }]}>
+                            <Form.Item label="Giới hạn Sân " name="max_fields" rules={[{ required: true }]}>
                                 <InputNumber min={1} value={data.max_fields} onChange={val => setData('max_fields', val ?? 1)} />
                             </Form.Item>
                             <Form.Item label="Giới hạn Nhân viên" name="max_staff" rules={[{ required: true }]}>
