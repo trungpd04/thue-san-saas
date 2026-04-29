@@ -74,32 +74,32 @@ class SubscriptionController extends Controller
         }
     }
 
-    public function approve(Request $request, $paymentId)
-    {
-        $payment = SubscriptionPayment::findOrFail($paymentId);
+    // public function approve(Request $request, $paymentId)
+    // {
+    //     $payment = SubscriptionPayment::findOrFail($paymentId);
 
-        if ($payment->status === 'success') {
-            return back()->with('error', 'Giao dịch này đã được xử lý trước đó.');
-        }
+    //     if ($payment->status === 'success') {
+    //         return back()->with('error', 'Giao dịch này đã được xử lý trước đó.');
+    //     }
 
-        DB::transaction(function () use ($payment) {
-            // 1. Cập nhật trạng thái thanh toán
-            $payment->update([
-                'status' => 'success',
-                'paid_at' => now(),
-                'note' => $payment->note . " | Admin xác nhận lúc: " . now(),
-            ]);
+    //     DB::transaction(function () use ($payment) {
+    //         // 1. Cập nhật trạng thái thanh toán
+    //         $payment->update([
+    //             'status' => 'success',
+    //             'paid_at' => now(),
+    //             'note' => $payment->note . " | Admin xác nhận lúc: " . now(),
+    //         ]);
 
-            // 2. Kích hoạt Subscription tương ứng
-            $subscription = $payment->subscription;
-            $subscription->update([
-                'status' => 'active',
-                // Có thể cập nhật lại ngày bắt đầu từ lúc Admin duyệt nếu muốn
-                // 'starts_at' => now(), 
-                // 'ends_at' => now()->addMonths($months_count),
-            ]);
-        });
+    //         // 2. Kích hoạt Subscription tương ứng
+    //         $subscription = $payment->subscription;
+    //         $subscription->update([
+    //             'status' => 'active',
+    //             // Có thể cập nhật lại ngày bắt đầu từ lúc Admin duyệt nếu muốn
+    //             // 'starts_at' => now(), 
+    //             // 'ends_at' => now()->addMonths($months_count),
+    //         ]);
+    //     });
 
-        return back()->with('success', 'Thanh toán thành công. Gói dịch vụ đã được kích hoạt.');
-    }
+    //     return back()->with('success', 'Thanh toán thành công. Gói dịch vụ đã được kích hoạt.');
+    // }
 }
