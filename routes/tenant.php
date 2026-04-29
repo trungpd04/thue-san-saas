@@ -45,5 +45,7 @@ Route::middleware([InitializeTenancyBySlug::class])
 
         // Trang xem lịch sử/trạng thái thanh toán
         Route::get('/subscription/status', [SubscriptionRegistrationController::class, 'status'])->name('tenant.subscription.status');
+        Route::get('/subscription/check-status/{ref}', [SubscriptionRegistrationController::class, 'checkStatus'])->name('tenant.subscription.check-status');
+        Route::get('/subscription/sepay-payment', [SubscriptionRegistrationController::class, 'sepayPayment'])->name('tenant.subscription.sepay-payment');
     });
 });

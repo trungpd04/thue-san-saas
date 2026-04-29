@@ -16,8 +16,9 @@ class SubscriptionController extends Controller
     /**
      * Hiển thị trang quản lý gói cước cho một Tenant cụ thể
      */
-    public function index(Tenant $tenant)
+    public function index(String $slug)
     {
+        $tenant = Tenant::where('slug', $slug)->firstOrFail();
         $plans = Plan::where('is_active', true)->get();
 
         // Lấy gói cước hiện tại của tenant
@@ -37,13 +38,16 @@ class SubscriptionController extends Controller
     /**
      * Gán gói cước cho Tenant
      */
-    public function store(Request $request, Tenant $tenant)
+    public function store(Request $request, String $slug)
     {
         $request->validate([
             'plan_id' => 'required|exists:plans,id',
+            'months' => 'required|integer|min:1|max:36',
         ]);
-
+        
+        $tenant = Tenant::where('slug', $slug)->firstOrFail();
         $plan = Plan::findOrFail($request->plan_id);
+        $months = (int) $request->months;
 
         try {
             DB::beginTransaction();
@@ -59,11 +63,11 @@ class SubscriptionController extends Controller
                 'plan_id' => $plan->id,
                 'status' => 'active',
                 'starts_at' => now(),
-                'ends_at' => now()->addMonth(),
+                'ends_at' => now()->addMonths($months),
             ]);
 
             DB::commit();
-            return redirect()->back()->with('success', "Đã gán gói {$plan->name} cho tenant thành công.");
+            return redirect()->back()->with('success', "Đã gán gói {$plan->name} ({$months} tháng) cho tenant thành công.");
         } catch (\Exception $e) {
             DB::rollback();
             return redirect()->back()->with('error', 'Có lỗi xảy ra khi gán gói cước: ' . $e->getMessage());
