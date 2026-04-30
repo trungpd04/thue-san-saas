@@ -97,6 +97,10 @@ class SubscriptionController extends Controller
         return Inertia::render('Tenant/Subscription/SepayPayment', [
             'payment' => $payment->load('subscription.plan'),
             'transaction_ref' => $transactionRef,
+            'sepay_config' => [
+                'bank_account' => config('services.sepay.bank_account'),
+                'bank_id' => config('services.sepay.bank_id'),
+            ]
         ]);
     }
 }
