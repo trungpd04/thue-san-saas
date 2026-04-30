@@ -4,6 +4,7 @@ import { Button, Typography, Space, Row, Col, DatePicker, message, Spin, Input, 
 import { CalendarOutlined, UserOutlined, ArrowLeftOutlined } from '@ant-design/icons';
 import axios from 'axios';
 import dayjs from 'dayjs';
+import AppDatePicker from '@/Components/Common/AppDatePicker';
 
 const { Title, Text } = Typography;
 
@@ -38,10 +39,9 @@ export default function BookingPage({ tenant, fieldType }: any) {
         }
     };
 
-    const onDateChange = (date: dayjs.Dayjs | null, dateString: string | string[] | null) => {
-        const ds = Array.isArray(dateString) ? dateString[0] : dateString;
-        if (ds && typeof ds === 'string') {
-            setSelectedDate(ds);
+    const onDateChange = (date: dayjs.Dayjs | null) => {
+        if (date) {
+            setSelectedDate(date.format('YYYY-MM-DD'));
             setSelectedSlots([]);
         }
     };
@@ -113,11 +113,9 @@ export default function BookingPage({ tenant, fieldType }: any) {
                     <Row gutter={[24, 16]} style={{ marginBottom: 24 }}>
                         <Col xs={24} md={8}>
                             <Text strong><CalendarOutlined /> Chọn ngày:</Text>
-                            <DatePicker
-                                value={dayjs(selectedDate)}
+                            <AppDatePicker
+                                value={selectedDate}
                                 onChange={onDateChange}
-                                format="YYYY-MM-DD"
-                                allowClear={false}
                                 style={{ width: '100%', marginTop: 8 }}
                             />
                         </Col>
@@ -155,16 +153,52 @@ export default function BookingPage({ tenant, fieldType }: any) {
                         <div style={{ overflowX: 'auto', border: '1px solid #f0f0f0', borderRadius: 8, paddingBottom: 16 }}>
                             <div style={{ minWidth: 1500 }}>
                                 {/* Header row: Times */}
-                                <div style={{ display: 'flex', background: '#e6f7ff', borderBottom: '1px solid #91d5ff' }}>
-                                    <div style={{ width: 120, flexShrink: 0, padding: '12px 16px', fontWeight: 'bold', borderRight: '1px solid #91d5ff' }}>
-                                        Sân
+                                <div style={{ display: 'flex', background: '#7cb305', borderBottom: '1px solid #ccc', height: 40 }}>
+                                    <div style={{ width: 120, flexShrink: 0, padding: '0 16px', fontWeight: 'bold', borderRight: '1px solid #ccc', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                     </div>
                                     <div style={{ flex: 1, display: 'flex', position: 'relative' }}>
                                         {timeSlots.map((time, index) => (
-                                            <div key={index} style={{ flex: 1, textAlign: 'center', padding: '12px 0', fontSize: 11, borderRight: '1px solid #91d5ff', color: '#0050b3' }}>
-                                                {time}
+                                            <div key={index} style={{
+                                                flex: 1,
+                                                position: 'relative',
+                                                borderRight: '1px solid #ccc',
+                                            }}>
+                                                <div style={{
+                                                    position: 'absolute',
+                                                    left: '-20px',
+                                                    width: '40px',
+                                                    textAlign: 'center',
+                                                    top: '8px',
+                                                    fontSize: 11,
+                                                    color: '#333',
+                                                    fontWeight: 500
+                                                }}>
+                                                    {time}
+                                                </div>
+                                                <div style={{
+                                                    position: 'absolute',
+                                                    bottom: 0,
+                                                    left: 0,
+                                                    width: '1px',
+                                                    height: '6px',
+                                                    background: '#FF9800'
+                                                }}></div>
                                             </div>
                                         ))}
+                                        {/* Final tick for the last hour (e.g., 23:00) */}
+                                        <div style={{
+                                            position: 'absolute',
+                                            right: 0,
+                                            top: '8px',
+                                            width: '40px',
+                                            textAlign: 'center',
+                                            marginRight: '-20px',
+                                            fontSize: 11,
+                                            color: '#333',
+                                            fontWeight: 500
+                                        }}>
+                                            23:00
+                                        </div>
                                     </div>
                                 </div>
 
@@ -174,9 +208,9 @@ export default function BookingPage({ tenant, fieldType }: any) {
                                 ) : (
                                     tenantFields.map((field) => {
                                         return (
-                                            <div key={field.id} style={{ display: 'flex', borderBottom: '1px solid #f0f0f0' }}>
+                                            <div key={field.id} style={{ display: 'flex', borderBottom: '1px solid #ccc' }}>
                                                 {/* Field Name */}
-                                                <div style={{ width: 120, flexShrink: 0, padding: '16px', background: '#fafafa', borderRight: '1px solid #f0f0f0', fontWeight: 500, display: 'flex', alignItems: 'center' }}>
+                                                <div style={{ width: 120, flexShrink: 0, padding: '16px', background: '#fff', borderRight: '1px solid #ccc', fontWeight: 500, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                                     {field.name}
                                                 </div>
 
@@ -191,7 +225,7 @@ export default function BookingPage({ tenant, fieldType }: any) {
                                                                 key={idx}
                                                                 style={{
                                                                     flex: 1,
-                                                                    borderRight: '1px solid #f0f0f0',
+                                                                    borderRight: '1px solid #ccc',
                                                                     background: isSelected ? '#bae0ff' : (isBooked ? '#ff4d4f' : 'transparent'),
                                                                     cursor: isBooked ? 'not-allowed' : 'pointer',
                                                                     transition: 'background 0.3s',

@@ -38,20 +38,20 @@ class PublicFieldController extends Controller
         ]);
     }
 
-    public function tenantBookings(Request $request, $tenant_id)
-    {
-        $date = $request->query('date', now()->format('Y-m-d'));
+    // public function tenantBookings(Request $request, $tenant_id)
+    // {
+    //     $date = $request->query('date', now()->format('Y-m-d'));
 
-        $fields = $this->publicFieldService->getTenantActiveFields($tenant_id);
-        $fieldIds = $fields->pluck('id')->toArray();
-        $bookings = $this->publicFieldService->getBookingsForTenantFields($fieldIds, $date);
+    //     $fields = $this->publicFieldService->getTenantActiveFields($tenant_id);
+    //     $fieldIds = $fields->pluck('id')->toArray();
+    //     $bookings = $this->publicFieldService->getBookingsForTenantFields($fieldIds, $date);
 
-        return response()->json([
-            'date' => $date,
-            'fields' => $fields,
-            'bookings' => $bookings
-        ]);
-    }
+    //     return response()->json([
+    //         'date' => $date,
+    //         'fields' => $fields,
+    //         'bookings' => $bookings
+    //     ]);
+    // }
 
     public function showBookingPage(Request $request, $tenant_id)
     {
