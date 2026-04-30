@@ -24,8 +24,17 @@ class SePayWebhookController extends Controller
         Log::info('SePay Webhook Received:', $request->all());
 
         // 1. Xác thực API Key
-        if ($request->header('x-api-key') !== config('services.sepay.webhook_key')) {
-            Log::warning('SePay Webhook: Unauthorized access attempt.');
+        $webhookToken = config('services.sepay.webhook_key');
+        $headerKey = $request->header('x-api-key');
+        $authHeader = $request->header('Authorization');
+
+        // Nếu có Authorization header (dạng "Apikey ..." hoặc "Bearer ...")
+        if ($authHeader && preg_match('/(?:Apikey|Bearer)\s+(.*)$/i', $authHeader, $matches)) {
+            $headerKey = $matches[1];
+        }
+
+        if ($headerKey !== $webhookToken) {
+            Log::warning('SePay Webhook: Unauthorized access attempt. Received: ' . ($headerKey ?? 'none'));
             return response()->json(['error' => 'Unauthorized'], 401);
         }
 
