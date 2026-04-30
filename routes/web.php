@@ -11,7 +11,7 @@ Route::redirect('/', '/admin/dashboard');
 
 Route::get('/san', [PublicFieldController::class, 'index'])->name('public.fields.index');
 Route::get('/san/{field}/bookings', [PublicFieldController::class, 'bookings'])->name('public.fields.bookings');
-Route::get('/san/tenant/{tenant_id}/bookings', [PublicFieldController::class, 'tenantBookings'])->name('public.fields.tenantBookings');
+// Route::get('/san/tenant/{tenant_id}/bookings', [PublicFieldController::class, 'tenantBookings'])->name('public.fields.tenantBookings');
 Route::get('/san/tenant/{tenant_id}/available-slots', [PublicFieldController::class, 'availableSlots'])->name('public.fields.availableSlots');
 Route::get('/san/tenant/{tenant_id}/booking', [PublicFieldController::class, 'showBookingPage'])->name('public.fields.bookingPage');
 Route::post('/san/tenant/{tenant_id}/public-book', [PublicFieldController::class, 'storeBooking'])->name('public.fields.storeBooking');
