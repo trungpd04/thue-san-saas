@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\AuthenticatedSessionController;
 use App\Http\Controllers\Tenant\Auth\RegisteredTenantController;
+use App\Http\Controllers\Admin\PlanController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -28,6 +29,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
     Route::get('/tenant', function () {
         return Inertia::render('Tenant');
     })->name('admin.tenant');
+    Route::resource('plans', PlanController::class)->except(['create', 'show', 'edit']);
 
     require __DIR__ . '/subscription.php';
 });
