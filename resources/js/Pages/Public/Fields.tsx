@@ -18,9 +18,9 @@ export default function Fields({ fields }: any) {
                         <Title level={2} style={{ margin: 0 }}>Hệ thống Sân Thể Thao</Title>
                         <Text type="secondary">Khám phá và đặt sân dễ dàng từ các đối tác của chúng tôi</Text>
                     </div>
-                    <Link href="/admin/login">
+                    {/* <Link href="/admin/login">
                         <Button type="default">Dành cho chủ sân</Button>
-                    </Link>
+                    </Link> */}
                 </div>
             </div>
 
@@ -40,12 +40,7 @@ export default function Fields({ fields }: any) {
                                     bodyStyle={{ padding: '20px' }}
                                 >
                                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
-                                        <Title level={4} style={{ margin: 0, color: '#1890ff' }}>{field.name}</Title>
-                                        {field.field_type && (
-                                            <Tag color="blue" icon={<TagOutlined />}>
-                                                {field.field_type.name}
-                                            </Tag>
-                                        )}
+                                        <Title level={4} style={{ margin: 0, color: '#1890ff' }}>{field.field_type?.name || 'Sân thể thao'}</Title>
                                     </div>
 
                                     <Space direction="vertical" style={{ width: '100%' }} size="middle">
@@ -75,7 +70,7 @@ export default function Fields({ fields }: any) {
                                             </div>
                                         </div>
 
-                                        <Link href={`/san/tenant/${field.tenant?.id}/booking`} style={{ width: '100%', marginTop: 16 }}>
+                                        <Link href={`/san/tenant/${field.tenant?.id}/booking?field_type_id=${field.field_type?.id}`} style={{ width: '100%', marginTop: 16 }}>
                                             <Button
                                                 type="primary"
                                                 size="large"

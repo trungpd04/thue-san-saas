@@ -7,7 +7,7 @@ import dayjs from 'dayjs';
 
 const { Title, Text } = Typography;
 
-export default function BookingPage({ tenant }: any) {
+export default function BookingPage({ tenant, fieldType }: any) {
     const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
     const [tenantFields, setTenantFields] = useState<any[]>([]);
     const [loadingSlots, setLoadingSlots] = useState(false);
@@ -25,7 +25,11 @@ export default function BookingPage({ tenant }: any) {
         if (!tenantId) return;
         setLoadingSlots(true);
         try {
-            const response = await axios.get(`/san/tenant/${tenantId}/available-slots`, { params: { date } });
+            const params: any = { date };
+            if (fieldType?.id) {
+                params.field_type_id = fieldType.id;
+            }
+            const response = await axios.get(`/san/tenant/${tenantId}/available-slots`, { params });
             setTenantFields(response.data.fields || []);
         } catch (error) {
             message.error('Không thể lấy dữ liệu lịch đặt sân.');
@@ -98,7 +102,7 @@ export default function BookingPage({ tenant }: any) {
                         </Link>
                         <div>
                             <Title level={2} style={{ margin: 0 }}>{tenant.name}</Title>
-                            <Text type="secondary">Chọn giờ và đặt sân trực tuyến</Text>
+                            <Text type="secondary">{fieldType ? `Đặt ${fieldType.name}` : 'Chọn giờ và đặt sân trực tuyến'}</Text>
                         </div>
                     </div>
                 </div>
@@ -106,8 +110,8 @@ export default function BookingPage({ tenant }: any) {
 
             <div style={{ maxWidth: 1280, margin: '0 auto', padding: '0 24px' }}>
                 <Card bodyStyle={{ padding: 32 }} bordered={false} className="shadow-sm">
-                    <Row gutter={24} style={{ marginBottom: 24 }}>
-                        <Col span={8}>
+                    <Row gutter={[24, 16]} style={{ marginBottom: 24 }}>
+                        <Col xs={24} md={8}>
                             <Text strong><CalendarOutlined /> Chọn ngày:</Text>
                             <DatePicker
                                 value={dayjs(selectedDate)}
@@ -117,7 +121,7 @@ export default function BookingPage({ tenant }: any) {
                                 style={{ width: '100%', marginTop: 8 }}
                             />
                         </Col>
-                        <Col span={8}>
+                        <Col xs={24} md={8}>
                             <Text strong><UserOutlined /> Họ và tên:</Text>
                             <Input
                                 value={customerName}
@@ -126,7 +130,7 @@ export default function BookingPage({ tenant }: any) {
                                 style={{ width: '100%', marginTop: 8 }}
                             />
                         </Col>
-                        <Col span={8}>
+                        <Col xs={24} md={8}>
                             <Text strong>Số điện thoại:</Text>
                             <Input
                                 value={customerPhone}
@@ -223,7 +227,6 @@ export default function BookingPage({ tenant }: any) {
                                                                     }
                                                                 }}
                                                             >
-                                                                {!isBooked && slot.price_per_hour > 0 && `${(slot.price_per_hour / 1000)}k`}
                                                             </div>
                                                         );
                                                     })}
@@ -236,7 +239,7 @@ export default function BookingPage({ tenant }: any) {
                         </div>
                     </Spin>
 
-                    <div style={{ marginTop: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div style={{ marginTop: 24, display: 'flex', flexWrap: 'wrap', gap: 16, justifyContent: 'space-between', alignItems: 'center' }}>
                         <div style={{ display: 'flex', gap: 16, fontSize: 12 }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                                 <div style={{ width: 16, height: 16, background: '#fff', border: '1px solid #f0f0f0', borderRadius: 4 }}></div>
@@ -252,7 +255,7 @@ export default function BookingPage({ tenant }: any) {
                             </div>
                         </div>
 
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
                             <div style={{ textAlign: 'right' }}>
                                 <Text type="secondary">Tổng cộng:</Text>
                                 <div style={{ fontSize: 24, fontWeight: 'bold', color: '#ff4d4f' }}>
