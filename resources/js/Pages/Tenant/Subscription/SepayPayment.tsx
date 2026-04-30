@@ -27,12 +27,26 @@ type SepayPaymentProps = {
     };
 };
 
-export default function SepayPayment({ payment, transaction_ref }: { payment: Payment; transaction_ref: string }) {
+export default function SepayPayment({ 
+    payment, 
+    transaction_ref, 
+    sepay_config 
+}: { 
+    payment: Payment; 
+    transaction_ref: string;
+    sepay_config: {
+        bank_account: string;
+        bank_id: string;
+    }
+}) {
     const { tenancy } = usePage<SepayPaymentProps>().props;
     const [status, setStatus] = useState(payment?.status || 'pending');
     const [loading, setLoading] = useState(false);
     const [checkingStatus, setCheckingStatus] = useState(false);
     const tenantBasePath = tenancy?.tenant?.slug ? `/tenant/${tenancy.tenant.slug}` : '/tenant';
+
+    const bankAccount = sepay_config?.bank_account;
+    const bankId = sepay_config?.bank_id;
 
     useEffect(() => {
         let interval: any;
@@ -80,7 +94,7 @@ export default function SepayPayment({ payment, transaction_ref }: { payment: Pa
                         title="Thanh toán thành công!"
                         subTitle="Gói dịch vụ của bạn đã được kích hoạt. Hệ thống sẽ chuyển hướng trong giây lát."
                         extra={
-                            <Button type="primary" href="/tenant/subscription/status">
+                            <Button type="primary" href={`${tenantBasePath}/subscription/status`}>
                                 Xem trạng thái
                             </Button>
                         }
@@ -173,7 +187,7 @@ export default function SepayPayment({ payment, transaction_ref }: { payment: Pa
                             {status === 'pending' && (
                                 <div style={{ textAlign: 'center', marginTop: 24 }}>
                                     <img
-                                        src={`https://qr.sepay.vn/img?acc=0865172698&bank=MB&amount=${payment?.amount}&des=${transaction_ref}&template=compact`}
+                                        src={`https://qr.sepay.vn/img?acc=${bankAccount}&bank=${bankId}&amount=${payment?.amount}&des=${transaction_ref}&template=compact`}
                                         alt="QR Code"
                                         style={{ maxWidth: '100%', height: 'auto' }}
                                     />
