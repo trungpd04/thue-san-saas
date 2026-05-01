@@ -30,6 +30,7 @@ class SubscriptionController extends Controller
         // Lấy subscription hiện tại
         $currentSubscription = Subscription::where('tenant_id', $tenant->id)
             ->with('plan')
+            ->latest()
             ->first();
 
         return Inertia::render('Tenant/Subscription/Register', [
@@ -102,5 +103,10 @@ class SubscriptionController extends Controller
                 'bank_id' => config('services.sepay.bank_id'),
             ]
         ]);
+    }
+    public function cancel(Request $request){
+        $ref = $request->query('ref');
+        $success = $this->subscriptionService->cancelPendingPayment($ref);
+        return response()->json(['success' => $success]);
     }
 }
