@@ -6,10 +6,22 @@ import { ConfigProvider } from 'antd';
 import viVN from 'antd/locale/vi_VN';
 import theme from './Config/theme';
 
-const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
+function resolveAppName(): string {
+  const fromVite = import.meta.env.VITE_APP_NAME;
+  if (fromVite) {
+    return fromVite;
+  }
+  const fromDocument = document.documentElement.dataset.appName;
+  if (fromDocument) {
+    return fromDocument;
+  }
+  return 'Laravel';
+}
+
+const appName = resolveAppName();
 
 createInertiaApp({
-  title: () => appName,
+  title: title => (title ? `${title} - ${appName}` : appName),
   resolve: name =>
     resolvePageComponent(
       [`./Pages/${name}.tsx`, `./Pages/Admin/${name}.tsx`, `./Pages/Tenant/${name}.tsx`],
