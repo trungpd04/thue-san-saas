@@ -21,14 +21,24 @@ class TenantSubscriptionService
         return DB::connection('mysql')->transaction(function () use ($plan, $tenant, $months) {
             $totalAmount = $plan->price_monthly * $months;
 
-            // Cập nhật hoặc tạo mới Subscription (trạng thái chờ)
-            $subscription = Subscription::updateOrCreate(
-                ['tenant_id' => $tenant->id],
-                [
-                    'plan_id' => $plan->id,
-                    'status' => 'pending',
-                ]
-            );
+            // Nếu đang có subscription ở trạng thái pending, xóa nó và các payment liên quan
+            // Để người dùng có thể tạo yêu cầu mới (ví dụ chọn gói khác hoặc thời gian khác)
+            $existingPending = Subscription::where('tenant_id', $tenant->id)
+                ->where('status', 'pending')
+                ->first();
+
+            if ($existingPending) {
+                $existingPending->payments()->delete();
+                $existingPending->delete();
+            }
+
+            // Tạo MỚI Subscription (trạng thái chờ)
+            // Không dùng updateOrCreate để tránh ghi đè lên gói đang Active
+            $subscription = Subscription::create([
+                'tenant_id' => $tenant->id,
+                'plan_id' => $plan->id,
+                'status' => 'pending',
+            ]);
 
             // Lưu vào bảng subscription_payments
             $payment = SubscriptionPayment::create([
@@ -64,6 +74,21 @@ class TenantSubscriptionService
     {
         $payment = SubscriptionPayment::where('transaction_ref', $ref)->first();
         return $payment ? $payment->status : null;
+    }
+
+    /**
+     * Dọn dẹp các yêu cầu thanh toán đã hết hạn (5 phút)
+     */
+    public function cleanupExpiredPayments($tenantId)
+    {
+        $expiredPayments = SubscriptionPayment::where('tenant_id', $tenantId)
+            ->where('status', 'pending')
+            ->where('created_at', '<', Carbon::now()->subMinutes(5))
+            ->get();
+
+        foreach ($expiredPayments as $payment) {
+            $this->cancelPendingPayment($payment->transaction_ref);
+        }
     }
 
     public function cancelPendingPayment($transactionRef)
