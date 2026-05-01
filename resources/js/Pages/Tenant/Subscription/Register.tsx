@@ -25,6 +25,7 @@ import {
 import TenantLayout from "@/Layout/Tenant/TenantLayout";
 import axios from "axios";
 import { App } from "antd";
+import { formatVND } from "@/utils/currency";
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -111,12 +112,12 @@ export default function Register({
         },
     ];
 
-    const formatCurrency = (amount: number) => {
-        return new Intl.NumberFormat("vi-VN", {
-            style: "currency",
-            currency: "VND",
-        }).format(amount);
-    };
+    // const formatCurrency = (amount: number) => {
+    //     return new Intl.NumberFormat("vi-VN", {
+    //         style: "currency",
+    //         currency: "VND",
+    //     }).format(amount);
+    // };
     const { message } = App.useApp();
 
     const handleCreateRequest = async (plan: Plan) => {
@@ -221,7 +222,7 @@ export default function Register({
                                         level={3}
                                         style={{ margin: 0, color: "#1890ff" }}
                                     >
-                                        {formatCurrency(price)}
+                                        {formatVND(price)}
                                     </Title>
                                     <Text type="secondary">/ tháng</Text>
                                 </div>

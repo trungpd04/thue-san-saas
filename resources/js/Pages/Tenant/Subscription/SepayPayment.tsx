@@ -4,7 +4,7 @@ import { Card, Button, Row, Col, Typography, Space, Divider, Result, Alert, Spin
 import { CheckCircleOutlined, ClockCircleOutlined, CopyOutlined, QrcodeOutlined } from "@ant-design/icons";
 import TenantLayout from "@/Layout/Tenant/TenantLayout";
 import axios from 'axios';
-import { formatVND } from '@/utils/currency';
+import { formatVND, normalizeVNDAmount } from '@/utils/currency';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -239,7 +239,7 @@ export default function SepayPayment({
                             {status === 'pending' && (
                                 <div style={{ textAlign: 'center', marginTop: 24 }}>
                                     <img
-                                        src={`https://qr.sepay.vn/img?acc=${bankAccount}&bank=${bankId}&amount=${payment?.amount}&des=${transaction_ref}&template=compact`}
+                                        src={`https://qr.sepay.vn/img?acc=${bankAccount}&bank=${bankId}&amount=${normalizeVNDAmount(payment?.amount)}&des=${transaction_ref}&template=compact`}
                                         alt="QR"
                                         style={{ maxWidth: '100%' }}
                                     />
