@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html class="h-full bg-gray-200">
+<html class="h-full bg-gray-200" lang="vi" data-app-name="{{ e(config('app.name')) }}">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
