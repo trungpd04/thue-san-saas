@@ -52,15 +52,28 @@ class SePayWebhookService
                         ? (int)round($payment->amount / $plan->price_monthly)
                         : 1;
 
-                    $startDate = ($subscription->ends_at && $subscription->ends_at->isFuture())
-                        ? $subscription->ends_at
+                    // Tìm gói cũ đang active để lấy ngày hết hạn (nếu muốn nối tiếp) và xóa sau đó
+                    $oldActiveSubscription = \App\Models\Subscription::where('tenant_id', $payment->tenant_id)
+                        ->where('id', '!=', $subscription->id)
+                        ->whereIn('status', ['active', 'trial'])
+                        ->first();
+
+                    $startDate = ($oldActiveSubscription && $oldActiveSubscription->ends_at && $oldActiveSubscription->ends_at->isFuture())
+                        ? $oldActiveSubscription->ends_at
                         : now();
 
+                    // Kích hoạt gói mới
                     $subscription->update([
                         'status' => 'active',
-                        'starts_at' => ($subscription->status === 'active') ? $subscription->starts_at : now(),
+                        'starts_at' => now(), // Ngày bắt đầu thực tế của bản ghi này
                         'ends_at' => $startDate->copy()->addMonths($months),
                     ]);
+
+                    // Xóa gói cũ sau khi gói mới đã active (theo yêu cầu)
+                    if ($oldActiveSubscription) {
+                        $oldActiveSubscription->payments()->delete();
+                        $oldActiveSubscription->delete();
+                    }
                 });
 
                 Log::info("SePay Webhook: Successfully processed Ref: {$transactionRef}");

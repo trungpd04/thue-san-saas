@@ -13,6 +13,7 @@ interface Payment {
     transaction_ref: string;
     amount: number;
     status: string;
+    created_at: string;
     subscription: {
         plan: {
             name: string;
@@ -49,10 +50,29 @@ export default function SepayPayment({
     const { message } = App.useApp();
 
     const EXPIRE_TIME = 5 * 60 * 1000;
-    const expiredAtRef = useRef(Date.now() + EXPIRE_TIME);
+    // Tính toán thời gian hết hạn dựa trên created_at
+    const createdAtTime = new Date(payment.created_at).getTime();
+    const expiredAt = createdAtTime + EXPIRE_TIME;
+    const [timeLeft, setTimeLeft] = useState(Math.max(0, Math.floor((expiredAt - Date.now()) / 1000)));
 
     const bankAccount = sepay_config?.bank_account;
     const bankId = sepay_config?.bank_id;
+
+    // Cập nhật timeLeft mỗi giây để hiển thị trong Alert
+    useEffect(() => {
+        if (status !== 'pending' || timeLeft <= 0) return;
+
+        const timer = setInterval(() => {
+            const currentLeft = Math.max(0, Math.floor((expiredAt - Date.now()) / 1000));
+            setTimeLeft(currentLeft);
+            if (currentLeft <= 0) {
+                handleAutoCancel();
+                clearInterval(timer);
+            }
+        }, 1000);
+
+        return () => clearInterval(timer);
+    }, [status, expiredAt]);
 
     // ✅ Polling check status
     useEffect(() => {
@@ -108,11 +128,6 @@ export default function SepayPayment({
         return `${m}:${s < 10 ? '0' : ''}${s}`;
     };
 
-    const getTimeLeft = () => {
-        const diff = expiredAtRef.current - Date.now();
-        return diff > 0 ? Math.floor(diff / 1000) : 0;
-    };
-
     const copyToClipboard = (text: string) => {
         navigator.clipboard.writeText(text);
         message.success('Đã sao chép!');
@@ -153,13 +168,13 @@ export default function SepayPayment({
                     <div style={{ textAlign: 'center' }}>
                         <Statistic.Countdown
                             title="Thời gian còn lại"
-                            value={expiredAtRef.current}
+                            value={expiredAt}
                             onFinish={() => handleAutoCancel()}
                             format="mm:ss"
                         />
 
                         <Text type="secondary">
-                            Hoàn tất thanh toán trong 5 phút.
+                            Hoàn tất thanh toán trong 5 phút kể từ khi tạo đơn.
                         </Text>
                     </div>
                 )}
@@ -191,7 +206,7 @@ export default function SepayPayment({
                                             <Space>
                                                 <ClockCircleOutlined />
                                                 <span>
-                                                    Còn lại: <strong>{formatTime(getTimeLeft())}</strong>
+                                                    Còn lại: <strong>{formatTime(timeLeft)}</strong>
                                                 </span>
                                             </Space>
                                         }
