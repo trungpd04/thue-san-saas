@@ -47,9 +47,13 @@ type RegisterPageProps = {
 
 export default function Register({
     plans = [],
-    currentSubscription,
+    activeSubscription,
+    pendingSubscription,
+    currentSubscription, // Vẫn nhận để tương thích ngược nếu cần
 }: {
     plans: Plan[];
+    activeSubscription: any;
+    pendingSubscription: any;
     currentSubscription: any;
 }) {
     const { tenancy } = usePage<RegisterPageProps>().props;
@@ -60,9 +64,12 @@ export default function Register({
         ? `/tenant/${tenancy.tenant.slug}`
         : "/tenant";
 
-    // tính ngày hết hạn báo trước 7 ngày
-    const endsAt = currentSubscription?.ends_at
-        ? new Date(currentSubscription.ends_at)
+    // Danh sách các subscription để hiển thị trong table
+    const displaySubscriptions = [activeSubscription, pendingSubscription].filter(Boolean);
+
+    // tính ngày hết hạn báo trước 7 ngày (dựa trên gói active)
+    const endsAt = activeSubscription?.ends_at
+        ? new Date(activeSubscription.ends_at)
         : null;
     const today = new Date();
     const isExpiringSoon =
@@ -75,7 +82,7 @@ export default function Register({
             dataIndex: ["plan", "name"],
             key: "plan_name",
             render: (text: string) => (
-                <Text strong style={{ color: '#1890ff' }}>
+                <Text strong style={{ color: "#1890ff" }}>
                     {text}
                 </Text>
             ),
@@ -104,11 +111,49 @@ export default function Register({
             title: "Trạng thái",
             dataIndex: "status",
             key: "status",
-            render: (status: string) => (
-                <Tag color={status === "active" ? "green" : "blue"}>
-                    {status === "active" ? "Đang hoạt động" : "Dùng thử"}
-                </Tag>
-            ),
+            render: (status: string) => {
+                const statusMap: Record<
+                    string,
+                    { color: string; label: string }
+                > = {
+                    active: { color: "green", label: "Đang hoạt động" },
+                    pending: { color: "orange", label: "Chờ xử lý" },
+                    trial: { color: "purple", label: "Dùng thử" },
+                    expired: { color: "red", label: "Hết hạn" },
+                    cancelled: { color: "default", label: "Đã hủy" },
+                };
+
+                const config = statusMap[status] || {
+                    color: "default",
+                    label: status,
+                };
+
+                return <Tag color={config.color}>{config.label}</Tag>;
+            },
+        },
+        {
+            title: "Hành động",
+            key: "action",
+            render: (_: any, record: any) => {
+                if (record.status === "pending") {
+                    const pendingPayment = record.payments?.[0];
+                    if (pendingPayment) {
+                        return (
+                            <Button
+                                type="primary"
+                                size="small"
+                                icon={<CreditCardOutlined />}
+                                onClick={() => {
+                                    window.location.href = `${tenantBasePath}/subscription/sepay-payment?ref=${pendingPayment.transaction_ref}`;
+                                }}
+                            >
+                                Tiếp tục thanh toán
+                            </Button>
+                        );
+                    }
+                }
+                return null;
+            },
         },
     ];
 
@@ -148,13 +193,13 @@ export default function Register({
             <Head title="Đăng ký gói dịch vụ" />
 
             {/* Phần hiển thị Gói hiện tại - Giống index Admin */}
-            {currentSubscription && (
+            {displaySubscriptions.length > 0 && (
                 <div style={{ marginBottom: 40 }}>
                     <Title level={4}>Thông tin gói hiện tại</Title>
                     {isExpiringSoon && (
                         <Alert
                             message="Cảnh báo hết hạn"
-                            description={`Gói dịch vụ của bạn sẽ hết hạn vào ngày ${new Date(currentSubscription.ends_at).toLocaleDateString("vi-VN")}. Vui lòng gia hạn để không bị gián đoạn.`}
+                            description={`Gói dịch vụ của bạn sẽ hết hạn vào ngày ${new Date(activeSubscription.ends_at).toLocaleDateString("vi-VN")}. Vui lòng gia hạn để không bị gián đoạn.`}
                             type="error"
                             showIcon
                             style={{ marginBottom: 16 }}
@@ -169,7 +214,7 @@ export default function Register({
                     >
                         <Table
                             columns={currentSubColumns}
-                            dataSource={[currentSubscription]}
+                            dataSource={displaySubscriptions}
                             pagination={false}
                             rowKey="id"
                         />
@@ -185,7 +230,8 @@ export default function Register({
 
             <Row gutter={[24, 24]}>
                 {plans.map((plan) => {
-                    const isCurrent = currentSubscription?.plan_id === plan.id;
+                    const isActive = activeSubscription?.plan_id === plan.id;
+                    const isPending = pendingSubscription?.plan_id === plan.id;
                     const price = Number(plan.price_monthly);
 
                     return (
@@ -197,17 +243,22 @@ export default function Register({
                                     height: "100%",
                                     display: "flex",
                                     flexDirection: "column",
-                                    border: isCurrent
+                                    border: isActive
                                         ? "2px solid #1890ff"
-                                        : "1px solid #f0f0f0",
+                                        : isPending
+                                            ? "2px dashed #orange"
+                                            : "1px solid #f0f0f0",
                                 }}
                                 title={
                                     <Space>
                                         <span style={{ fontWeight: "bold" }}>
                                             {plan.name}
                                         </span>
-                                        {isCurrent && (
+                                        {isActive && (
                                             <Tag color="blue">Đang dùng</Tag>
+                                        )}
+                                        {isPending && (
+                                            <Tag color="orange">Đang chờ xử lý</Tag>
                                         )}
                                     </Space>
                                 }
