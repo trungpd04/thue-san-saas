@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Head, usePage } from "@inertiajs/react";
-import { Card, Button, Row, Col, Typography, Space, Divider, Result, Alert, message, Spin, Statistic } from "antd";
-import { CheckCircleOutlined, ClockCircleOutlined, CopyOutlined, CheckOutlined, QrcodeOutlined } from "@ant-design/icons";
+import { Card, Button, Row, Col, Typography, Space, Divider, Result, Alert, Spin, Statistic, App } from "antd";
+import { CheckCircleOutlined, ClockCircleOutlined, CopyOutlined, QrcodeOutlined } from "@ant-design/icons";
 import TenantLayout from "@/Layout/Tenant/TenantLayout";
 import axios from 'axios';
+import { formatVND, normalizeVNDAmount } from '@/utils/currency';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -27,12 +28,12 @@ type SepayPaymentProps = {
     };
 };
 
-export default function SepayPayment({ 
-    payment, 
-    transaction_ref, 
-    sepay_config 
-}: { 
-    payment: Payment; 
+export default function SepayPayment({
+    payment,
+    transaction_ref,
+    sepay_config
+}: {
+    payment: Payment;
     transaction_ref: string;
     sepay_config: {
         bank_account: string;
@@ -40,43 +41,76 @@ export default function SepayPayment({
     }
 }) {
     const { tenancy } = usePage<SepayPaymentProps>().props;
-    const [status, setStatus] = useState(payment?.status || 'pending');
-    const [loading, setLoading] = useState(false);
-    const [checkingStatus, setCheckingStatus] = useState(false);
     const tenantBasePath = tenancy?.tenant?.slug ? `/tenant/${tenancy.tenant.slug}` : '/tenant';
+
+    const [status, setStatus] = useState(payment?.status || 'pending');
+    const [checkingStatus, setCheckingStatus] = useState(false);
+
+    const { message } = App.useApp();
+
+    const EXPIRE_TIME = 5 * 60 * 1000;
+    const expiredAtRef = useRef(Date.now() + EXPIRE_TIME);
 
     const bankAccount = sepay_config?.bank_account;
     const bankId = sepay_config?.bank_id;
 
+    // ✅ Polling check status
     useEffect(() => {
-        let interval: any;
-        if (status === 'pending') {
-            interval = setInterval(async () => {
-                try {
-                    setCheckingStatus(true);
-                    const res = await axios.get(`${tenantBasePath}/subscription/check-status/${transaction_ref}`);
-                    setStatus(res.data.status);
-                    if (res.data.status === 'success' || res.data.status === 'paid') {
-                        message.success('Thanh toán thành công! Gói dịch vụ đã được kích hoạt.');
-                        clearInterval(interval);
-                        setTimeout(() => {
-                            window.location.href = `${tenantBasePath}/subscription/status`;
-                        }, 2000);
-                    }
-                } catch (e) {
-                    console.error("Checking status error", e);
-                } finally {
-                    setCheckingStatus(false);
-                }
-            }, 3000); // Check mỗi 3 giây
-        }
-        return () => {
-            if (interval) clearInterval(interval);
-        };
-    }, [status, transaction_ref, tenantBasePath]);
+        if (status !== 'pending') return;
 
-    const formatCurrency = (amount: number) => {
-        return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
+        const interval = setInterval(async () => {
+            try {
+                setCheckingStatus(true);
+                const res = await axios.get(`${tenantBasePath}/subscription/check-status/${transaction_ref}`);
+
+                setStatus(prev => {
+                    if (prev !== res.data.status) {
+                        return res.data.status;
+                    }
+                    return prev;
+                });
+
+                if (res.data.status === 'success' || res.data.status === 'paid') {
+                    message.success('Thanh toán thành công!');
+                    clearInterval(interval);
+
+                    setTimeout(() => {
+                        window.location.href = `${tenantBasePath}/subscription/status`;
+                    }, 2000);
+                }
+
+            } catch (e) {
+                console.error(e);
+            } finally {
+                setCheckingStatus(false);
+            }
+        }, 3000);
+
+        return () => clearInterval(interval);
+    }, [transaction_ref, tenantBasePath, status]);
+
+    // ✅ Auto cancel
+    const handleAutoCancel = async () => {
+        if (status !== 'pending') return;
+
+        try {
+            await axios.post(`${tenantBasePath}/subscription/cancel`, { ref: transaction_ref });
+            message.warning("Đã hết thời gian thanh toán (5 phút).");
+        } catch (e) {}
+
+        window.location.href = `${tenantBasePath}/subscription/register`;
+    };
+
+    // ✅ Format time
+    const formatTime = (seconds: number) => {
+        const m = Math.floor(seconds / 60);
+        const s = seconds % 60;
+        return `${m}:${s < 10 ? '0' : ''}${s}`;
+    };
+
+    const getTimeLeft = () => {
+        const diff = expiredAtRef.current - Date.now();
+        return diff > 0 ? Math.floor(diff / 1000) : 0;
     };
 
     const copyToClipboard = (text: string) => {
@@ -85,87 +119,112 @@ export default function SepayPayment({
     };
 
     const renderStatus = () => {
-        switch (status) {
-            case 'success':
-            case 'paid':
-                return (
-                    <Result
-                        status="success"
-                        title="Thanh toán thành công!"
-                        subTitle="Gói dịch vụ của bạn đã được kích hoạt. Hệ thống sẽ chuyển hướng trong giây lát."
-                        extra={
-                            <Button type="primary" href={`${tenantBasePath}/subscription/status`}>
-                                Xem trạng thái
-                            </Button>
-                        }
-                    />
-                );
-            case 'pending':
-                return (
-                    <div>
-                        <Alert
-                            message="Đang chờ thanh toán"
-                            description="Vui lòng quét mã QR hoặc chuyển khoản theo thông tin bên dưới."
-                            type="info"
-                            showIcon
-                            style={{ marginBottom: 24 }}
-                        />
-                    </div>
-                );
-            default:
-                return null;
+        if (status === 'success' || status === 'paid') {
+            return (
+                <Result
+                    status="success"
+                    title="Thanh toán thành công!"
+                    subTitle="Gói dịch vụ đã được kích hoạt."
+                    extra={
+                        <Button type="primary" href={`${tenantBasePath}/subscription/status`}>
+                            Xem trạng thái
+                        </Button>
+                    }
+                />
+            );
         }
+
+        return (
+            <Alert
+                message="Đang chờ thanh toán"
+                description="Vui lòng quét QR hoặc chuyển khoản."
+                type="info"
+                showIcon
+            />
+        );
     };
 
     return (
         <TenantLayout>
             <Head title="Thanh toán SePay" />
 
-            <div style={{ padding: '24px' }}>
+            <Card title="Trạng thái thanh toán">
+                {status === 'pending' && (
+                    <div style={{ textAlign: 'center' }}>
+                        <Statistic.Countdown
+                            title="Thời gian còn lại"
+                            value={expiredAtRef.current}
+                            onFinish={() => handleAutoCancel()}
+                            format="mm:ss"
+                        />
+
+                        <Text type="secondary">
+                            Hoàn tất thanh toán trong 5 phút.
+                        </Text>
+                    </div>
+                )}
+            </Card>
+
+            <div style={{ padding: 24 }}>
                 <Row gutter={[24, 24]}>
                     <Col xs={24} md={12}>
-                        <Card title="Thông tin thanh toán" bordered>
+                        <Card title="Thông tin thanh toán">
                             <Space direction="vertical" style={{ width: '100%' }}>
                                 <div>
-                                    <Text type="secondary">Gói dịch vụ:</Text>
+                                    <Text type="secondary">Gói:</Text>
                                     <Title level={4}>{payment?.subscription?.plan?.name}</Title>
                                 </div>
+
                                 <Divider />
+
                                 <div>
-                                    <Text type="secondary">Số tiền cần thanh toán:</Text>
+                                    <Text type="secondary">Số tiền:</Text>
                                     <Title level={3} style={{ color: '#1890ff' }}>
-                                        {formatCurrency(payment?.amount)}
+                                        {formatVND(payment?.amount)}
                                     </Title>
                                 </div>
+
+                                {status === 'pending' && (
+                                    <Alert
+                                        type="warning"
+                                        message={
+                                            <Space>
+                                                <ClockCircleOutlined />
+                                                <span>
+                                                    Còn lại: <strong>{formatTime(getTimeLeft())}</strong>
+                                                </span>
+                                            </Space>
+                                        }
+                                    />
+                                )}
+
                                 <Divider />
+
                                 <div>
                                     <Text type="secondary">Mã giao dịch:</Text>
-                                    <br />
                                     <Space>
                                         <Text code>{transaction_ref}</Text>
                                         <Button
-                                            type="text"
                                             size="small"
                                             icon={<CopyOutlined />}
                                             onClick={() => copyToClipboard(transaction_ref)}
                                         />
                                     </Space>
                                 </div>
+
                                 <Divider />
+
                                 <div>
-                                    <Text type="secondary">Trạng thái:</Text>
-                                    <br />
                                     {status === 'pending' && (
                                         <Space>
-                                            <ClockCircleOutlined style={{ color: '#faad14' }} />
                                             <Spin size="small" />
-                                            <Text>Đang chờ thanh toán...</Text>
+                                            <Text>Đang chờ...</Text>
                                         </Space>
                                     )}
                                     {(status === 'success' || status === 'paid') && (
                                         <Space>
                                             <CheckCircleOutlined style={{ color: '#52c41a' }} />
-                                            <Text>Thanh toán thành công!</Text>
+                                            <Text>Thành công</Text>
                                         </Space>
                                     )}
                                 </div>
@@ -174,25 +233,18 @@ export default function SepayPayment({
                     </Col>
 
                     <Col xs={24} md={12}>
-                        <Card
-                            title={
-                                <Space>
-                                    <QrcodeOutlined />
-                                    Mã QR thanh toán
-                                </Space>
-                            }
-                            bordered
-                        >
+                        <Card title="QR Thanh toán">
                             {renderStatus()}
+
                             {status === 'pending' && (
                                 <div style={{ textAlign: 'center', marginTop: 24 }}>
                                     <img
-                                        src={`https://qr.sepay.vn/img?acc=${bankAccount}&bank=${bankId}&amount=${payment?.amount}&des=${transaction_ref}&template=compact`}
-                                        alt="QR Code"
-                                        style={{ maxWidth: '100%', height: 'auto' }}
+                                        src={`https://qr.sepay.vn/img?acc=${bankAccount}&bank=${bankId}&amount=${normalizeVNDAmount(payment?.amount)}&des=${transaction_ref}&template=compact`}
+                                        alt="QR"
+                                        style={{ maxWidth: '100%' }}
                                     />
-                                    <Paragraph style={{ marginTop: 16, color: '#666' }}>
-                                        Quét mã QR bằng ứng dụng ngân hàng của bạn để thanh toán
+                                    <Paragraph>
+                                        Quét QR bằng app ngân hàng
                                     </Paragraph>
                                 </div>
                             )}

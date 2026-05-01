@@ -1,5 +1,5 @@
 import React from 'react';
-import { Layout, Menu, Typography, MenuProps } from 'antd';
+import { Layout, Menu, Typography, MenuProps, Space } from 'antd';
 import { CalendarOutlined, CreditCardOutlined, DashboardOutlined, UserOutlined } from '@ant-design/icons';
 import { Link, usePage } from '@inertiajs/react';
 
@@ -34,9 +34,25 @@ export default function TenantSidebar({ collapsed }: TenantSidebarProps) {
             label: <Link href={`${base}/booking`}>Đặt sân</Link>,
         },
         {
-            key: `${base}/subscription/register`,
+            key: 'subscription-group',
             icon: <CreditCardOutlined />,
-            label: <Link href={`${base}/subscription/register`}>Đăng ký gói</Link>,
+            label: (
+                <Space>
+                    <span>Gói cước</span>
+                </Space>
+            ),
+            children: [
+                {
+                    key: `${base}/subscription/register`,
+                    icon: <CreditCardOutlined />,
+                    label: <Link href={`${base}/subscription/register`}>Đăng ký gói</Link>,
+                },
+                {
+                    key: `${base}/subscription/status`,
+                    icon: <CreditCardOutlined />,
+                    label: <Link href={`${base}/subscription/status`}>Lịch sử thanh toán</Link>,
+                }
+            ]
         },
     ];
 
