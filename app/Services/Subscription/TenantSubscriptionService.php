@@ -26,7 +26,7 @@ class TenantSubscriptionService
                 ['tenant_id' => $tenant->id],
                 [
                     'plan_id' => $plan->id,
-                    'status' => 'pending', 
+                    'status' => 'pending',
                 ]
             );
 
@@ -64,5 +64,29 @@ class TenantSubscriptionService
     {
         $payment = SubscriptionPayment::where('transaction_ref', $ref)->first();
         return $payment ? $payment->status : null;
+    }
+
+    public function cancelPendingPayment($transactionRef)
+    {
+        return DB::transaction(function () use ($transactionRef) {
+            $payment = SubscriptionPayment::where('transaction_ref', $transactionRef)
+                ->where('status', 'pending')
+                ->first();
+
+            if ($payment) {
+                $subscription = $payment->subscription;
+                $payment->delete();
+
+                // Nếu subscription cũng đang ở trạng thái pending (chưa được kích hoạt bao giờ)
+                // và không còn khoản thanh toán nào khác liên quan thì xóa để dọn dẹp
+                if ($subscription && $subscription->status === 'pending') {
+                    if ($subscription->payments()->count() === 0) {
+                        $subscription->delete();
+                    }
+                }
+                return true;
+            }
+            return false;
+        });
     }
 }
