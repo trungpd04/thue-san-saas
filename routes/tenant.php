@@ -47,5 +47,6 @@ Route::middleware([InitializeTenancyBySlug::class])
         Route::get('/subscription/status', [SubscriptionController::class, 'status'])->name('tenant.subscription.status');
         Route::get('/subscription/check-status/{ref}', [SubscriptionController::class, 'checkStatus'])->name('tenant.subscription.check-status');
         Route::get('/subscription/sepay-payment', [SubscriptionController::class, 'sepayPayment'])->name('tenant.subscription.sepay-payment');
+        Route::post('/subscription/cancel', [SubscriptionController::class, 'cancel'])->name('tenant.subscription.cancel');
     });
 });
