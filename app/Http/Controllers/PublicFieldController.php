@@ -85,14 +85,35 @@ class PublicFieldController extends Controller
             $createdBookings = $this->publicFieldService->storeBooking($tenant_id, $request->validated());
 
             return response()->json([
-                'message' => 'Đặt sân thành công!',
-                'bookings' => $createdBookings
+                'message' => 'Slot đã được khóa tạm thời!',
+                'booking_ids' => collect($createdBookings)->pluck('id')->join(',')
             ]);
         } catch (\Exception $e) {
-            if ($e->getMessage() === 'Một số khung giờ đã được đặt. Vui lòng chọn lại.') {
+            if ($e->getMessage() === 'Sân hiện đang có người thao tác, vui lòng chọn slot khác hoặc quay lại sau.') {
                 return response()->json(['message' => $e->getMessage()], 409);
             }
             return response()->json(['message' => 'Có lỗi xảy ra khi tạo đặt sân.', 'error' => $e->getMessage()], 500);
         }
+    }
+
+    public function checkout(Request $request)
+    {
+        $bookingIds = explode(',', $request->query('booking_ids', ''));
+        
+        // Find bookings (globally since we don't have tenant context yet in the URL)
+        $bookings = \App\Models\Tenant\Booking::whereIn('id', $bookingIds)
+            ->with(['field', 'tenant'])
+            ->get();
+
+        if ($bookings->isEmpty()) {
+            return redirect()->route('public.fields.index')->with('error', 'Không tìm thấy thông tin đặt sân.');
+        }
+
+        $tenant = $bookings->first()->tenant;
+
+        return Inertia::render('Public/Checkout', [
+            'bookings' => $bookings,
+            'tenant' => $tenant,
+        ]);
     }
 }
