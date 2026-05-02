@@ -4,7 +4,8 @@ import { Card, Table, Typography, Tag, Space, Button, Breadcrumb } from "antd";
 import { ClockCircleOutlined, CheckCircleOutlined, CloseCircleOutlined, ArrowLeftOutlined } from "@ant-design/icons";
 import TenantLayout from "@/Layout/Tenant/TenantLayout";
 import { App } from 'antd';
-
+import { formatDate } from '@/utils/date';
+import { formatVND, normalizeVNDAmount } from '@/utils/currency';
 const { Title, Text } = Typography;
 
 interface Plan {
@@ -40,9 +41,9 @@ export default function Status({ payments = [] }: { payments: Payment[] }) {
     const { tenancy } = usePage<StatusPageProps>().props;
     const tenantBasePath = tenancy?.tenant?.slug ? `/tenant/${tenancy.tenant.slug}` : '/tenant';
 
-    const formatCurrency = (amount: number) => {
-        return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
-    };
+    // const formatCurrency = (amount: number) => {
+    //     return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
+    // };
 
     const getStatusTag = (status: string) => {
         switch (status) {
@@ -73,7 +74,7 @@ export default function Status({ payments = [] }: { payments: Payment[] }) {
                 <Space direction="vertical" size={0}>
                     <Text strong>{record.subscription?.plan?.name}</Text>
                     <Text type="secondary" style={{ fontSize: '12px' }}>
-                        {record.billing_period_start} - {record.billing_period_end}
+                        {formatDate(record.billing_period_start)} - {formatDate(record.billing_period_end)}
                     </Text>
                 </Space>
             ),
@@ -82,7 +83,7 @@ export default function Status({ payments = [] }: { payments: Payment[] }) {
             title: 'Số tiền',
             dataIndex: 'amount',
             key: 'amount',
-            render: (amount: string) => formatCurrency(Number(amount)),
+            render: (amount: string) => formatVND(amount),
         },
         {
             title: 'Trạng thái',
