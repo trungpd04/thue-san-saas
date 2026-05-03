@@ -26,6 +26,7 @@ import TenantLayout from "@/Layout/Tenant/TenantLayout";
 import axios from "axios";
 import { App } from "antd";
 import { formatVND } from "@/utils/currency";
+import { formatDate } from '@/utils/date';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -177,6 +178,18 @@ export default function Register({
                 },
             );
             if (response.data.success) {
+                // Chuyển hướng sang trang thanh toán SePay
+                // window.location.href = `${tenantBasePath}/subscription/sepay-payment?ref=${response.data.transaction_ref}`;
+                 // Trường hợp 1: Nếu là gói miễn phí (sau khi khấu trừ tiền âm/bằng 0)
+                if (response.data.is_free) {
+                    message.success(response.data.message || "Gói dịch vụ đã được kích hoạt!");
+                    // Chuyển hướng về Dashboard (Lưu ý phải truyền slug tenant vào route)
+                    // Nếu dùng window.location.href:
+                    window.location.href = `/tenant/${tenancy?.tenant?.slug}/subscription/status`;
+                    return;
+                }
+
+                // Trường hợp 2: Nếu cần thanh toán (số tiền > 0)
                 // Chuyển hướng sang trang thanh toán SePay
                 window.location.href = `${tenantBasePath}/subscription/sepay-payment?ref=${response.data.transaction_ref}`;
             }

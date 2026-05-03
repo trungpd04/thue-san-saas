@@ -108,8 +108,13 @@ class SubscriptionController extends Controller
         $transactionRef = $request->query('ref');
         $payment = SubscriptionPayment::where('transaction_ref', $transactionRef)->first();
 
+        // if (!$payment) {
+        //     return redirect()->route('tenant.subscription.index')->with('error', 'Thông tin thanh toán không tồn tại hoặc đã hết hạn');
+        // }
+        // Sửa tại hàm sepayPayment hoặc bất kỳ chỗ nào có redirect
         if (!$payment) {
-            return redirect()->route('tenant.subscription.index')->with('error', 'Thông tin thanh toán không tồn tại hoặc đã hết hạn');
+            return redirect()->route('tenant.subscription.index', ['tenant' => tenant('slug')])
+                ->with('error', 'Thông tin thanh toán không tồn tại hoặc đã hết hạn');
         }
 
         return Inertia::render('Tenant/Subscription/SepayPayment', [
