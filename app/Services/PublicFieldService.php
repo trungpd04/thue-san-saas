@@ -161,6 +161,7 @@ class PublicFieldService
     {
         $dateStr = $validatedData['date'];
         $breakdown = $validatedData['pricing_breakdown'];
+        $now = now(); // Capture once for all bookings in this transaction
 
         DB::beginTransaction();
         try {
@@ -189,13 +190,13 @@ class PublicFieldService
                         if ($lastSlot['end_time'] === $slot['start_time']) {
                             $currentGroup[] = $slot;
                         } else {
-                            $createdBookings[] = $this->createBookingFromGroup($tenant_id, $fieldId, $customer->id, $dateStr, $currentGroup, $validatedData['note'] ?? null);
+                            $createdBookings[] = $this->createBookingFromGroup($tenant_id, $fieldId, $customer->id, $dateStr, $currentGroup, $validatedData['note'] ?? null, $now);
                             $currentGroup = [$slot];
                         }
                     }
                 }
                 if (!empty($currentGroup)) {
-                    $createdBookings[] = $this->createBookingFromGroup($tenant_id, $fieldId, $customer->id, $dateStr, $currentGroup, $validatedData['note'] ?? null);
+                    $createdBookings[] = $this->createBookingFromGroup($tenant_id, $fieldId, $customer->id, $dateStr, $currentGroup, $validatedData['note'] ?? null, $now);
                 }
             }
             DB::commit();
@@ -226,7 +227,7 @@ class PublicFieldService
         }
     }
 
-    private function createBookingFromGroup($tenant_id, $field_id, $customer_id, $date, $slots, $note = null)
+    private function createBookingFromGroup($tenant_id, $field_id, $customer_id, $date, $slots, $note = null, $lockedAt = null)
     {
         $startTime = $slots[0]['start_time'] . ':00';
         $endTime = end($slots)['end_time'] . ':00';
@@ -243,7 +244,7 @@ class PublicFieldService
             'total_price' => $totalPrice,
             'pricing_breakdown' => collect($slots)->map(function ($s) { return (array)$s; })->toArray(),
             'status' => 'locked_pending',
-            'locked_at' => now(),
+            'locked_at' => $lockedAt ?: now(),
             'note' => $note ?: 'Web public booking',
         ]);
     }

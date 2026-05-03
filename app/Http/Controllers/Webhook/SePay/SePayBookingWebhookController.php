@@ -28,13 +28,13 @@ class SePayBookingWebhookController extends Controller
         $headerKey = $request->header('x-api-key');
         $authHeader = $request->header('Authorization');
 
-        // Nếu có Authorization header
+        // Nếu có Authorization header (dạng "Apikey ..." hoặc "Bearer ...")
         if ($authHeader && preg_match('/(?:Apikey|Bearer)\s+(.*)$/i', $authHeader, $matches)) {
             $headerKey = $matches[1];
         }
 
         if ($headerKey !== $webhookToken) {
-            Log::warning('SePay Booking Webhook: Unauthorized access attempt.');
+            Log::warning('SePay Booking Webhook: Unauthorized access attempt. Received: ' . ($headerKey ?? 'none'));
             return response()->json(['error' => 'Unauthorized'], 401);
         }
 
