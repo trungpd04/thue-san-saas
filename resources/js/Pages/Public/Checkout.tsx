@@ -1,24 +1,66 @@
 import React, { useState, useEffect } from 'react';
 import { Head, Link } from '@inertiajs/react';
-import { Button, Typography, Row, Col, Card, Statistic, Divider, Space, Tag, Result } from 'antd';
+import { Button, Typography, Row, Col, Card, Statistic, Divider, Space, Tag, Result, App } from 'antd';
 import { ClockCircleOutlined, CheckCircleOutlined, ArrowLeftOutlined, InfoCircleOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
+import axios from 'axios';
 
 const { Title, Text, Paragraph } = Typography;
-const { Countdown } = Statistic;
 
-export default function Checkout({ bookings, tenant }: any) {
+export default function Checkout({ bookings, tenant, sepayConfig }: any) {
+    return (
+        <App>
+            <CheckoutContent bookings={bookings} tenant={tenant} sepayConfig={sepayConfig} />
+        </App>
+    );
+}
+
+function CheckoutContent({ bookings, tenant, sepayConfig }: any) {
     const [isExpired, setIsExpired] = useState(false);
+    const [isPaid, setIsPaid] = useState(false);
+    const [checking, setChecking] = useState(false);
 
     // Calculate expiration time (5 minutes from the first booking's locked_at)
     const lockedAt = dayjs(bookings[0].locked_at);
     const deadline = lockedAt.add(5, 'minute').valueOf();
 
     const onFinish = () => {
-        setIsExpired(true);
+        if (!isPaid) {
+            setIsExpired(true);
+        }
     };
 
     const totalPrice = bookings.reduce((sum: number, b: any) => sum + parseFloat(b.total_price), 0);
+
+    const { message } = App.useApp();
+
+    // Polling for payment status
+    useEffect(() => {
+        if (isPaid || isExpired) return;
+
+        const bookingIds = bookings.map((b: any) => b.id).join(',');
+        
+        const interval = setInterval(async () => {
+            try {
+                const response = await axios.get(`/san/booking-status`, {
+                    params: { booking_ids: bookingIds }
+                });
+                
+                console.log('Payment status check:', response.data);
+
+                if (response.data.paid === true || response.data.paid === 'true') {
+                    console.log('Payment confirmed! Switching to success screen.');
+                    message.success('Thanh toán thành công! Thông tin đặt sân của bạn đã được xác nhận.');
+                    setIsPaid(true);
+                    clearInterval(interval);
+                }
+            } catch (error) {
+                console.error('Error checking payment status:', error);
+            }
+        }, 5000); 
+
+        return () => clearInterval(interval);
+    }, [bookings, isPaid, isExpired]);
 
     if (isExpired) {
         return (
@@ -35,6 +77,26 @@ export default function Checkout({ bookings, tenant }: any) {
                             <Link href="/san" key="home">
                                 <Button size="large">Quay về trang chủ</Button>
                             </Link>
+                        ]}
+                    />
+                </Card>
+            </div>
+        );
+    }
+
+    if (isPaid) {
+        return (
+            <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
+                <Card className="max-w-lg w-full shadow-lg rounded-xl text-center">
+                    <Result
+                        status="success"
+                        title="Thanh toán thành công!"
+                        subTitle="Cảm ơn bạn đã sử dụng dịch vụ. Thông tin đặt sân của bạn đã được xác nhận."
+                        extra={[
+                            <Link href="/san" key="home">
+                                <Button type="primary" size="large">Quay về trang chủ</Button>
+                            </Link>,
+                            <Button size="large" onClick={() => window.print()}>In hóa đơn</Button>
                         ]}
                     />
                 </Card>
@@ -64,7 +126,7 @@ export default function Checkout({ bookings, tenant }: any) {
             <div style={{ maxWidth: 1000, margin: '0 auto', padding: '0 24px' }}>
                 <Row gutter={24}>
                     <Col xs={{ span: 24, order: 2 }} lg={{ span: 16, order: 1 }}>
-                        <Card bordered={false} className="shadow-sm rounded-xl mb-6">
+                        <Card variant="borderless" className="shadow-sm rounded-xl mb-6">
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 }}>
                                 <div>
                                     <Title level={4}>Chi tiết đặt sân</Title>
@@ -105,7 +167,7 @@ export default function Checkout({ bookings, tenant }: any) {
                             </div>
                         </Card>
 
-                        <Card bordered={false} className="shadow-sm rounded-xl">
+                        <Card variant="borderless" className="shadow-sm rounded-xl">
                             <Title level={4}><InfoCircleOutlined /> Hướng dẫn thanh toán</Title>
                             <Paragraph>
                                 1. Mở ứng dụng Ngân hàng hoặc Ví điện tử (Momo, ZaloPay,...) quét mã QR bên cạnh.
@@ -114,7 +176,7 @@ export default function Checkout({ bookings, tenant }: any) {
                                 2. Kiểm tra số tiền và nội dung chuyển khoản chính xác.
                             </Paragraph>
                             <Paragraph>
-                                3. Sau khi chuyển khoản thành công, hệ thống sẽ tự động cập nhật trạng thái trong vòng 1-2 phút.
+                                3. Sau khi chuyển khoản thành công, hệ thống sẽ tự động cập nhật trạng thái trong vòng vài giây.
                             </Paragraph>
                             <div style={{ background: '#fff7e6', padding: '12px 16px', borderRadius: 8, borderLeft: '4px solid #ffa940' }}>
                                 <Text type="warning" strong>Lưu ý:</Text>
@@ -127,13 +189,14 @@ export default function Checkout({ bookings, tenant }: any) {
                     </Col>
 
                     <Col xs={{ span: 24, order: 1 }} lg={{ span: 8, order: 2 }}>
-                        <Card bordered={false} className="shadow-sm rounded-xl text-center sticky top-8">
+                        <Card variant="borderless" className="shadow-sm rounded-xl text-center sticky top-8">
                             <Text strong type="secondary">THỜI GIAN CÒN LẠI</Text>
                             <div style={{ margin: '16px 0' }}>
-                                <Countdown
+                                <Statistic.Timer
+                                    type="countdown"
                                     value={deadline}
                                     onFinish={onFinish}
-                                    valueStyle={{ color: '#ff4d4f', fontSize: 32, fontWeight: 'bold' }}
+                                    styles={{ content: { color: '#ff4d4f', fontSize: 32, fontWeight: 'bold' } }}
                                 />
                             </div>
 
@@ -153,24 +216,18 @@ export default function Checkout({ bookings, tenant }: any) {
                             }}>
                                 <div className="text-center p-4">
                                     <img
-                                        src={`https://api.vietqr.io/image/970422-0904060802-lZlFp6y.jpg?amount=${totalPrice}&addInfo=BK${bookings[0].id}&accountName=TRUNG%20PHAN%20DUC`}
+                                        src={`https://img.vietqr.io/image/${sepayConfig.bank_id}-${sepayConfig.bank_account}-compact2.png?amount=${totalPrice}&addInfo=BK${bookings[0].id}&accountName=${encodeURIComponent(sepayConfig.account_name)}`}
                                         alt="QR Payment"
                                         style={{ maxWidth: '100%', borderRadius: 8 }}
                                     />
                                     <div style={{ marginTop: 8 }}>
                                         <Text strong>Nội dung: BK{bookings[0].id}</Text>
+                                        <br />
+                                        <Text type="secondary" style={{ fontSize: 12 }}>
+                                            {sepayConfig.account_name} | {sepayConfig.bank_account}
+                                        </Text>
                                     </div>
                                 </div>
-                            </div>
-
-                            <Button type="primary" block size="large" onClick={() => window.location.reload()} icon={<CheckCircleOutlined />}>
-                                Tôi đã thanh toán
-                            </Button>
-
-                            <div style={{ marginTop: 16 }}>
-                                <Text type="secondary" style={{ fontSize: 12 }}>
-                                    Hệ thống tự động xác nhận qua Webhook
-                                </Text>
                             </div>
                         </Card>
                     </Col>

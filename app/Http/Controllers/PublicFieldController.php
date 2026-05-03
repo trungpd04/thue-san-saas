@@ -114,6 +114,27 @@ class PublicFieldController extends Controller
         return Inertia::render('Public/Checkout', [
             'bookings' => $bookings,
             'tenant' => $tenant,
+            'sepayConfig' => [
+                'bank_id' => config('services.sepay.bank_id'),
+                'bank_account' => config('services.sepay.bank_account'),
+                'account_name' => config('services.sepay.account_name'),
+            ]
+        ]);
+    }
+
+    public function checkPaymentStatus(Request $request)
+    {
+        $bookingIds = explode(',', $request->query('booking_ids', ''));
+        $bookings = \App\Models\Tenant\Booking::withoutGlobalScopes()->whereIn('id', $bookingIds)->get();
+        
+        // Check if ALL bookings are paid or confirmed
+        $isPaid = $bookings->every(function ($booking) {
+            return in_array($booking->status, ['paid', 'confirmed']);
+        });
+
+        return response()->json([
+            'paid' => $isPaid,
+            'status' => $bookings->pluck('status', 'id')
         ]);
     }
 }

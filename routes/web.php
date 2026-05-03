@@ -16,6 +16,7 @@ Route::get('/san/tenant/{tenant_id}/available-slots', [PublicFieldController::cl
 Route::get('/san/tenant/{tenant_id}/booking', [PublicFieldController::class, 'showBookingPage'])->name('public.fields.bookingPage');
 Route::post('/san/tenant/{tenant_id}/public-book', [PublicFieldController::class, 'storeBooking'])->name('public.fields.storeBooking');
 Route::get('/san/checkout', [PublicFieldController::class, 'checkout'])->name('public.fields.checkout');
+Route::get('/san/booking-status', [PublicFieldController::class, 'checkPaymentStatus'])->name('public.fields.checkStatus');
 Route::middleware('guest')->group(function () {
     Route::get('/admin/login', [AuthenticatedSessionController::class, 'create'])->name('admin.login');
     Route::post('/admin/login', [AuthenticatedSessionController::class, 'store'])
