@@ -19,10 +19,86 @@ class TenantSubscriptionService
         $months = (int) $months;
 
         return DB::connection('mysql')->transaction(function () use ($plan, $tenant, $months) {
-            $totalAmount = $plan->price_monthly * $months;
+            // 1. Xác định gói hiện tại và ngày hết hạn thực tế (bao gồm cả Trial)
+            $activeSub = Subscription::where('tenant_id', $tenant->id)
+                ->whereIn('status', ['active', 'trial'])
+                ->first();
+
+            $currentEndDate = now();
+            if ($activeSub) {
+                // Ưu tiên ends_at, nếu không có thì lấy trial_ends_at
+                $currentEndDate = $activeSub->ends_at ?: $activeSub->trial_ends_at ?: now();
+            }
+
+            // 2. Tính toán giá và khấu trừ (Proration)
+            $newPlanTotal = $plan->price_monthly * $months;
+            $discountAmount = 0;
+            $isReplacement = false;
+
+            // Chỉ khấu trừ nếu đổi sang gói KHÁC hoàn toàn (Upgrade)
+            // và gói cũ còn hạn
+            if ($activeSub && $activeSub->plan_id != $plan->id && $currentEndDate->isAfter(now())) {
+                $remainingDays = (int) now()->diffInDays($currentEndDate);
+                
+                if ($remainingDays > 0) {
+                    $oldPlanPrice = $activeSub->plan->price_monthly;
+                    // Tính tiền thừa dựa trên số ngày còn lại (giả định 1 tháng có 30 ngày)
+                    // Tiền thừa = (Số ngày dư * (Giá gói cũ / 30)) * 70%
+                    $discountAmount = ($remainingDays * ($oldPlanPrice / 30)) * 0.7;
+                    $isReplacement = true; // Đánh dấu là thay thế gói cũ ngay lập tức
+                }
+            }
+
+            // 3. Xác định ngày bắt đầu và kết thúc
+            // Nếu là thay thế gói (có khấu trừ tiền), gói mới bắt đầu từ NOW
+            // Nếu là gia hạn (cùng gói hoặc không khấu trừ), gói mới bắt đầu nối tiếp ngày cũ
+            if ($isReplacement) {
+                $startDate = now();
+            } else {
+                $startDate = $currentEndDate->isAfter(now()) ? $currentEndDate : now();
+            }
+
+            $billingEnd = $startDate->copy()->addMonths($months);
+            $totalAmount = max(0, $newPlanTotal - $discountAmount);
+
+            // 4. KIỂM TRA NẾU SỐ TIỀN BẰNG 0
+            if ($totalAmount <= 0) {
+                // Đóng gói cũ ngay lập tức
+                if ($activeSub) {
+                    $activeSub->update(['status' => 'expired', 'ends_at' => now()]);
+                }
+
+                // Tạo và Kích hoạt gói mới luôn
+                $subscription = Subscription::create([
+                    'tenant_id' => $tenant->id,
+                    'plan_id' => $plan->id,
+                    'status' => 'active',
+                    'starts_at' => now(),
+                    'ends_at' => $billingEnd
+                ]);
+
+                // Tạo bản ghi thanh toán thành công (0đ)
+                SubscriptionPayment::create([
+                    'tenant_id' => $tenant->id,
+                    'subscription_id' => $subscription->id,
+                    'amount' => 0,
+                    'payment_method' => 'internal_credit',
+                    'status' => 'success',
+                    'paid_at' => now(),
+                    'note' => "Đổi gói miễn phí (Khấu trừ từ gói cũ cao hơn hoặc bằng giá gói mới)",
+                    'billing_period_start' => $startDate,
+                    'billing_period_end' => $billingEnd,
+                ]);
+
+                return [
+                    'success' => true,
+                    'is_free' => true,
+                    'tenant_slug' => $tenant->slug,
+                    'message' => 'Gói dịch vụ đã được kích hoạt thành công (miễn phí).'
+                ];
+            }
 
             // Nếu đang có subscription ở trạng thái pending, xóa nó và các payment liên quan
-            // Để người dùng có thể tạo yêu cầu mới (ví dụ chọn gói khác hoặc thời gian khác)
             $existingPending = Subscription::where('tenant_id', $tenant->id)
                 ->where('status', 'pending')
                 ->first();
@@ -33,7 +109,6 @@ class TenantSubscriptionService
             }
 
             // Tạo MỚI Subscription (trạng thái chờ)
-            // Không dùng updateOrCreate để tránh ghi đè lên gói đang Active
             $subscription = Subscription::create([
                 'tenant_id' => $tenant->id,
                 'plan_id' => $plan->id,
@@ -48,8 +123,8 @@ class TenantSubscriptionService
                 'payment_method' => 'sepay_transfer',
                 'status' => 'pending',
                 'note' => "Thanh toán gói {$plan->name} cho {$months} tháng",
-                'billing_period_start' => Carbon::now(),
-                'billing_period_end' => Carbon::now()->addMonths($months),
+                'billing_period_start' => $startDate,
+                'billing_period_end' => $billingEnd,
             ]);
 
             $transactionRef = 'TS' . str_pad($payment->id, 6, '0', STR_PAD_LEFT);
