@@ -39,5 +39,7 @@ return [
         'bank_account' => env('SEPAY_BANK_ACCOUNT'),
         'bank_id' => env('SEPAY_BANK_ID'),
         'account_name' => env('SEPAY_ACCOUNT_NAME'),
+        'api_key' => env('SEPAY_API_KEY'),
+        'webhook_key' => env('SEPAY_WEBHOOK_TOKEN')
     ],
 ];

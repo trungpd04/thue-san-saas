@@ -13,7 +13,6 @@ class Plan extends Model
         'max_fields',
         'max_staff',
         'price_monthly',
-        'price_yearly',
         'is_active',
     ];
 
@@ -21,7 +20,6 @@ class Plan extends Model
     {
         return [
             'price_monthly' => 'decimal:2',
-            'price_yearly' => 'decimal:2',
             'is_active' => 'boolean',
         ];
     }

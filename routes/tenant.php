@@ -7,7 +7,7 @@ use Inertia\Inertia;
 use App\Http\Middleware\InitializeTenancyBySlug;
 use App\Http\Controllers\Tenant\Auth\AuthenticatedTenantSessionController;
 use App\Http\Controllers\Tenant\Auth\RegisteredTenantController;
-use App\Http\Controllers\Tenant\SubscriptionRegistrationController;
+use App\Http\Controllers\Tenant\Subscription\SubscriptionController;
 
 /*
 |--------------------------------------------------------------------------
@@ -38,12 +38,15 @@ Route::middleware([InitializeTenancyBySlug::class])
         Route::get('/dashboard', fn() => Inertia::render('Tenant/TenantDashboard'))->name('tenant.dashboard');
 
         // Trang chọn gói và thanh toán
-        Route::get('/subscription/register', [SubscriptionRegistrationController::class, 'index'])->name('tenant.subscription.index');
+        Route::get('/subscription/register', [SubscriptionController::class, 'index'])->name('tenant.subscription.index');
 
-        // Xử lý đăng ký (Đã có method register trong controller của bạn)
-        Route::post('/subscription/register', [SubscriptionRegistrationController::class, 'register'])->name('tenant.subscription.register');
+        // Xử lý đăng ký
+        Route::post('/subscription/register', [SubscriptionController::class, 'register'])->name('tenant.subscription.register');
 
         // Trang xem lịch sử/trạng thái thanh toán
-        Route::get('/subscription/status', [SubscriptionRegistrationController::class, 'status'])->name('tenant.subscription.status');
+        Route::get('/subscription/status', [SubscriptionController::class, 'status'])->name('tenant.subscription.status');
+        Route::get('/subscription/check-status/{ref}', [SubscriptionController::class, 'checkStatus'])->name('tenant.subscription.check-status');
+        Route::get('/subscription/sepay-payment', [SubscriptionController::class, 'sepayPayment'])->name('tenant.subscription.sepay-payment');
+        Route::post('/subscription/cancel', [SubscriptionController::class, 'cancel'])->name('tenant.subscription.cancel');
     });
 });
