@@ -37,7 +37,8 @@ return Application::configure(basePath: dirname(__DIR__))
 
             return route('admin.dashboard');
         });
-    })
-    ->withExceptions(function (Exceptions $exceptions): void {
+    })->withSchedule(function ($schedule) {
+        $schedule->command('booking:cleanup-expired')->everyMinute();
+    })->withExceptions(function (Exceptions $exceptions): void {
         //
     })->create();

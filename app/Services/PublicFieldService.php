@@ -39,7 +39,13 @@ class PublicFieldService
     {
         return Booking::where('field_id', $field->id)
             ->whereDate('booking_date', $dateStr)
-            ->whereIn('status', ['pending', 'confirmed', 'paid'])
+            ->where(function($query) {
+                $query->whereIn('status', ['pending', 'confirmed', 'paid'])
+                    ->orWhere(function($q) {
+                        $q->where('status', 'locked_pending')
+                          ->where('locked_at', '>=', now()->subMinutes(5));
+                    });
+            })
             ->get(['start_time', 'end_time']);
     }
 
@@ -56,8 +62,14 @@ class PublicFieldService
     {
         return Booking::whereIn('field_id', $fieldIds)
             ->whereDate('booking_date', $dateStr)
-            ->whereIn('status', ['pending', 'confirmed', 'paid'])
-            ->get(['id', 'field_id', 'start_time', 'end_time']);
+            ->where(function($query) {
+                $query->whereIn('status', ['pending', 'confirmed', 'paid'])
+                    ->orWhere(function($q) {
+                        $q->where('status', 'locked_pending')
+                          ->where('locked_at', '>=', now()->subMinutes(5));
+                    });
+            })
+            ->get(['id', 'field_id', 'start_time', 'end_time', 'status']);
     }
 
     public function getAvailableSlots($tenant_id, string $dateStr, $field_type_id = null)
@@ -104,11 +116,11 @@ class PublicFieldService
                     $startSlotDisplay = $slotGen['display_start'];
                     $endSlotDisplay = $slotGen['display_end'];
 
-                    // Check availability
-                    $isAvailable = true;
+                    // Check availability and status
+                    $slotStatus = 'available'; // available, booked, pending_payment
                     foreach ($fieldBookings as $booking) {
                         if ($booking->start_time < $endSlot && $booking->end_time > $startSlot) {
-                            $isAvailable = false;
+                            $slotStatus = ($booking->status === 'locked_pending') ? 'pending_payment' : 'booked';
                             break;
                         }
                     }
@@ -126,7 +138,8 @@ class PublicFieldService
                         'start_time' => $startSlotDisplay,
                         'end_time' => $endSlotDisplay,
                         'price_per_hour' => $slotPrice,
-                        'is_available' => $isAvailable,
+                        'status' => $slotStatus,
+                        'is_available' => $slotStatus === 'available',
                     ];
                 }
             }
@@ -148,19 +161,24 @@ class PublicFieldService
     {
         $dateStr = $validatedData['date'];
         $breakdown = $validatedData['pricing_breakdown'];
-
-        $this->validateNoOverlappingBookings($dateStr, $breakdown);
-
-        $customer = Customer::firstOrCreate(
-            ['tenant_id' => $tenant_id, 'phone' => $validatedData['customer_phone']],
-            ['name' => $validatedData['customer_name']]
-        );
-
-        $groupedBreakdown = collect($breakdown)->groupBy('field_id');
-        $createdBookings = [];
+        $now = now(); // Capture once for all bookings in this transaction
 
         DB::beginTransaction();
         try {
+            // Lock fields to prevent concurrent bookings
+            $fieldIdsToLock = collect($breakdown)->pluck('field_id')->unique()->toArray();
+            Field::whereIn('id', $fieldIdsToLock)->lockForUpdate()->get();
+
+            $this->validateNoOverlappingBookings($dateStr, $breakdown);
+
+            $customer = Customer::firstOrCreate(
+                ['tenant_id' => $tenant_id, 'phone' => $validatedData['customer_phone']],
+                ['name' => $validatedData['customer_name']]
+            );
+
+            $groupedBreakdown = collect($breakdown)->groupBy('field_id');
+            $createdBookings = [];
+
             foreach ($groupedBreakdown as $fieldId => $slots) {
                 $slots = collect($slots)->sortBy('start_time')->values()->toArray();
                 $currentGroup = [];
@@ -172,13 +190,13 @@ class PublicFieldService
                         if ($lastSlot['end_time'] === $slot['start_time']) {
                             $currentGroup[] = $slot;
                         } else {
-                            $createdBookings[] = $this->createBookingFromGroup($tenant_id, $fieldId, $customer->id, $dateStr, $currentGroup, $validatedData['note'] ?? null);
+                            $createdBookings[] = $this->createBookingFromGroup($tenant_id, $fieldId, $customer->id, $dateStr, $currentGroup, $validatedData['note'] ?? null, $now);
                             $currentGroup = [$slot];
                         }
                     }
                 }
                 if (!empty($currentGroup)) {
-                    $createdBookings[] = $this->createBookingFromGroup($tenant_id, $fieldId, $customer->id, $dateStr, $currentGroup, $validatedData['note'] ?? null);
+                    $createdBookings[] = $this->createBookingFromGroup($tenant_id, $fieldId, $customer->id, $dateStr, $currentGroup, $validatedData['note'] ?? null, $now);
                 }
             }
             DB::commit();
@@ -198,18 +216,18 @@ class PublicFieldService
             
             $overlapping = Booking::where('field_id', $slot['field_id'])
                 ->whereDate('booking_date', $dateStr)
-                ->whereIn('status', ['pending', 'confirmed', 'paid'])
+                ->whereIn('status', ['locked_pending', 'pending', 'confirmed', 'paid'])
                 ->where('start_time', '<', $endSlot)
                 ->where('end_time', '>', $startSlot)
                 ->exists();
 
             if ($overlapping) {
-                throw new \Exception('Một số khung giờ đã được đặt. Vui lòng chọn lại.');
+                throw new \Exception('Sân hiện đang có người thao tác, vui lòng chọn slot khác hoặc quay lại sau.');
             }
         }
     }
 
-    private function createBookingFromGroup($tenant_id, $field_id, $customer_id, $date, $slots, $note = null)
+    private function createBookingFromGroup($tenant_id, $field_id, $customer_id, $date, $slots, $note = null, $lockedAt = null)
     {
         $startTime = $slots[0]['start_time'] . ':00';
         $endTime = end($slots)['end_time'] . ':00';
@@ -225,7 +243,8 @@ class PublicFieldService
             'base_price' => $totalPrice,
             'total_price' => $totalPrice,
             'pricing_breakdown' => collect($slots)->map(function ($s) { return (array)$s; })->toArray(),
-            'status' => 'pending',
+            'status' => 'locked_pending',
+            'locked_at' => $lockedAt ?: now(),
             'note' => $note ?: 'Web public booking',
         ]);
     }
