@@ -4,6 +4,7 @@ namespace App\Services\Admin\Plans;
 
 use App\Models\Plan;
 use Illuminate\Support\Collection;
+use App\Factories\Admin\PlanFactory;
 
 class PlanService
 {
@@ -14,7 +15,13 @@ class PlanService
 
     public function createPlan(array $data): Plan
     {
-        return Plan::create($data);
+        // Nhờ Factory chế tạo đối tượng Plan
+        $plan = PlanFactory::make($data);
+        
+        // Service chỉ lo việc lưu xuống Database
+        $plan->save();
+
+        return $plan;
     }
 
     public function updatePlan(Plan $plan, array $data): bool
