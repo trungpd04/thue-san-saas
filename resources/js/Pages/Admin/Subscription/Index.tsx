@@ -1,6 +1,6 @@
-import React from "react";
+import React, { useState } from "react";
 import { Head, router } from "@inertiajs/react";
-import { Card, Button, Row, Col, Typography, Tag, Space, message, Divider, Descriptions } from "antd";
+import { Card, Button, Row, Col, Typography, Tag, Space, message, Divider, Descriptions, InputNumber } from "antd";
 import { CheckCircleOutlined, ShopOutlined, ArrowLeftOutlined } from "@ant-design/icons";
 import AdminLayout from "@/Layout/Admin/AdminLayout";
 const { Title, Text } = Typography;
@@ -20,22 +20,30 @@ interface Props {
 }
 
 export default function SubscriptionIndex({ plans = [], currentSubscription, tenant }: Props) {
+    const [months, setMonths] = useState<Record<number, number>>(
+        plans.reduce((acc, plan) => ({ ...acc, [plan.id]: 1 }), {})
+    );
     
     if (!tenant) {
         return <div style={{ padding: 24 }}>Đang tải thông tin tenant...</div>;
     }
     
     const handleSubscribe = (planId: number) => {
-    router.post(
-            `/admin/tenant/${tenant.id}/subscription`,
+        router.post(
+            `/admin/tenant/${tenant.slug}/subscription`,
             {
                 plan_id: planId,
+                months: months[planId] || 1,
             },
             {
                 onSuccess: () => message.success(`Đã cập nhật gói thành công cho ${tenant.name}`),
                 onError: () => message.error('Có lỗi xảy ra, vui lòng thử lại sau')
             }
         );
+    };
+
+    const handleMonthChange = (planId: number, value: number | null) => {
+        setMonths(prev => ({ ...prev, [planId]: value || 1 }));
     };
 
     return (
@@ -61,7 +69,7 @@ export default function SubscriptionIndex({ plans = [], currentSubscription, ten
                     </div>
                     <div>
                         <Title level={4} style={{ margin: 0 }}>{tenant.name}</Title>
-                        <Text type="secondary">ID: {tenant.id}</Text>
+                        <Text type="secondary">Slug: {tenant.slug}</Text>
                     </div>
                 </Space>
                 <Divider style={{ margin: '16px 0' }} />
@@ -86,7 +94,9 @@ export default function SubscriptionIndex({ plans = [], currentSubscription, ten
             <Row gutter={[24, 24]}>
                 {plans.map((plan) => {
                     const isCurrent = currentSubscription?.plan_id === plan.id;
-                    
+                    const selectedMonths = months[plan.id] || 1;
+                    const totalPrice = Number(plan.price_monthly) * selectedMonths;
+
                     return (
                         <Col xs={24} sm={12} md={8} key={plan.id}>
                             <Card 
@@ -128,18 +138,41 @@ export default function SubscriptionIndex({ plans = [], currentSubscription, ten
                                     </ul>
                                 </div>
 
+                                <Divider style={{ margin: '12px 0' }} />
+                                
+                                <div style={{ marginBottom: 16 }}>
+                                    <Text type="secondary">Số tháng đăng ký:</Text>
+                                    <div style={{ marginTop: 8 }}>
+                                        <InputNumber 
+                                            min={1} 
+                                            max={36} 
+                                            value={selectedMonths} 
+                                            onChange={(val) => handleMonthChange(plan.id, val)} 
+                                            style={{ width: '100%' }}
+                                        />
+                                    </div>
+                                    <div style={{ marginTop: 8, textAlign: 'right' }}>
+                                        <Text type="secondary">Tổng tiền: </Text>
+                                        <Text strong style={{ color: '#ff4d4f' }}>
+                                            {new Intl.NumberFormat('vi-VN', { 
+                                                style: 'currency', 
+                                                currency: 'VND' 
+                                            }).format(totalPrice)}
+                                        </Text>
+                                    </div>
+                                </div>
+
                                 <Button 
                                     type={isCurrent ? "default" : "primary"} 
                                     block 
                                     size="large"
-                                    disabled={isCurrent}
                                     onClick={() => handleSubscribe(plan.id)}
                                     style={{ 
                                         borderRadius: 8,
                                         fontWeight: 'bold'
                                     }}
                                 >
-                                    {isCurrent ? 'Gói đang áp dụng' : 'Gán gói này'}
+                                    {isCurrent ? 'Cập nhật thời hạn' : 'Gán gói này'}
                                 </Button>
                             </Card>
                         </Col>

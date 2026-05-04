@@ -48,6 +48,7 @@ export default function Status({ payments = [] }: { payments: Payment[] }) {
         switch (status) {
             case 'pending':
                 return <Tag color="warning" icon={<ClockCircleOutlined />}>Chờ thanh toán</Tag>;
+            case 'success':
             case 'paid':
             case 'completed':
                 return <Tag color="success" icon={<CheckCircleOutlined />}>Đã thanh toán</Tag>;

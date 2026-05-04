@@ -14,7 +14,6 @@ return new class extends Migration
             $table->integer('max_fields');
             $table->integer('max_staff');
             $table->decimal('price_monthly', 10, 2);
-            $table->decimal('price_yearly', 10, 2);
             $table->boolean('is_active')->default(true);
             $table->timestamps();
         });

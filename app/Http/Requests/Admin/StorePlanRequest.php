@@ -18,7 +18,6 @@ class StorePlanRequest extends FormRequest
             'max_fields' => 'required|integer|min:1',
             'max_staff' => 'required|integer|min:1',
             'price_monthly' => 'required|numeric|min:0',
-            'price_yearly' => 'required|numeric|min:0',
             'is_active' => 'boolean',
         ];
     }

@@ -14,7 +14,6 @@ interface Plan {
     max_fields: number;
     max_staff: number;
     price_monthly: number;
-    price_yearly: number;
     is_active: boolean;
 }
 
@@ -28,7 +27,7 @@ export default function Index({ plans }: PageProps) {
     const [form] = Form.useForm();
 
     const { data, setData, post, put, processing, reset, errors } = useForm({
-        name: '', max_fields: 1, max_staff: 1, price_monthly: 0, price_yearly: 0, is_active: true
+        name: '', max_fields: 1, max_staff: 1, price_monthly: 0, is_active: true
     });
 
     const openModal = (plan: Plan | null = null) => {
@@ -72,7 +71,6 @@ export default function Index({ plans }: PageProps) {
         { title: 'Số Sân Tối Đa', dataIndex: 'max_fields', key: 'max_fields' },
         { title: 'Số Nhân Viên', dataIndex: 'max_staff', key: 'max_staff' },
         { title: 'Giá Tháng', dataIndex: 'price_monthly', key: 'price_monthly', render: (val: number) => formatVND(val) },
-        { title: 'Giá Năm', dataIndex: 'price_yearly', key: 'price_yearly', render: (val: number) => formatVND(val) },
         { 
             title: 'Trạng Thái', dataIndex: 'is_active', key: 'is_active',
             render: (isActive: boolean) => <Tag color={isActive ? 'green' : 'red'}>{isActive ? 'Hoạt động' : 'Đã khóa'}</Tag>
@@ -137,7 +135,7 @@ export default function Index({ plans }: PageProps) {
                         </Row>
 
                         <Row gutter={16}>
-                            <Col span={12}>
+                            <Col span={24}>
                                 <Form.Item label="Giá Tháng (VNĐ)" name="price_monthly" rules={[{ required: true }]}>
                                     <InputNumber
                                         min={0}
@@ -145,18 +143,6 @@ export default function Index({ plans }: PageProps) {
                                         formatter={value => formatVND(value)}
                                         parser={parseVND}
                                         onChange={val => setData('price_monthly', val ?? 0)}
-                                        style={{ width: '100%' }}
-                                    />
-                                </Form.Item>
-                            </Col>
-                            <Col span={12}>
-                                <Form.Item label="Giá Năm (VNĐ)" name="price_yearly" rules={[{ required: true }]}>
-                                    <InputNumber
-                                        min={0}
-                                        value={data.price_yearly}
-                                        formatter={value => formatVND(value)}
-                                        parser={parseVND}
-                                        onChange={val => setData('price_yearly', val ?? 0)}
                                         style={{ width: '100%' }}
                                     />
                                 </Form.Item>
