@@ -77,12 +77,14 @@ class SubscriptionController extends Controller
         $request->validate([
             'plan_id' => 'required|exists:plans,id',
             'months' => 'required|integer|min:1|max:36',
+            'method' => 'sometimes|string|in:sepay,momo',
         ]);
 
         $result = $this->subscriptionService->register(
             tenant(),
             $request->plan_id,
-            $request->months
+            $request->months,
+            $request->input('method', 'sepay')
         );
 
         return response()->json($result);
