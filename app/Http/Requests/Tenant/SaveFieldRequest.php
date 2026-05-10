@@ -8,7 +8,9 @@ class SaveFieldRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true; // Tạm thời return true, xử lý quyền (Role) sau nếu cần
+        $user = auth('tenant')->user(); 
+        // Lấy value của Enum để so sánh
+        return $user && $user->role->value === 'manager';
     }
 
     public function rules(): array

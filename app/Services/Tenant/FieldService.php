@@ -27,10 +27,23 @@ class FieldService
     /**
      * Thêm sân mới
      */
-    public function createField(array $data): Field
+   public function createField($data)
     {
-        // Cột tenant_id sẽ tự động được điền do ta đang ở trong context của Tenant
-        return Field::create($data);
+        $tenant = tenant(); 
+        
+        // 1. Đếm số sân đang hoạt động
+        $currentFieldsCount = \App\Models\Tenant\Field::where('tenant_id', $tenant->id)->count();
+        
+        // 2. Lấy giới hạn từ gói cước (Dùng hàm activeSubscription có sẵn của bạn)
+        $subscription = $tenant->activeSubscription()->with('plan')->first();
+        $limit = ($subscription && $subscription->plan) ? $subscription->plan->max_fields : 0; 
+
+        // 3. Chặn tạo mới nếu vượt trần
+        if ($limit > 0 && $currentFieldsCount >= $limit) {
+            throw new \Exception("Gói cước hiện tại chỉ cho phép tối đa {$limit} sân. Vui lòng nâng cấp gói để tiếp tục.");
+        }
+
+        return \App\Models\Tenant\Field::create($data);
     }
 
     /**
