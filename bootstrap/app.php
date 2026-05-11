@@ -39,6 +39,8 @@ return Application::configure(basePath: dirname(__DIR__))
         });
     })->withSchedule(function ($schedule) {
         $schedule->command('booking:cleanup-expired')->everyMinute();
+         // Chạy lệnh thông báo vào 8:00 sáng mỗi ngày
+        $schedule->command('subscription:notify-expiring')->dailyAt('08:00');
     })->withExceptions(function (Exceptions $exceptions): void {
         //
     })->create();
