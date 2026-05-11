@@ -3,62 +3,68 @@
 namespace App\Services\Tenant;
 
 use App\Models\Tenant\Field;
-use App\Models\FieldType;
-use Illuminate\Database\Eloquent\Collection;
+use Exception;
+use Illuminate\Support\Facades\DB;
 
 class FieldService
 {
     /**
-     * Lấy danh sách sân kèm loại sân
+     * Tạo sân mới và kiểm tra giới hạn gói cước
      */
-    public function getAllFields(): Collection
+   public function createField(array $data)
     {
-        return Field::with('fieldType')->latest()->get();
-    }
+        $tenant = tenant();
 
-    /**
-     * Lấy danh sách loại sân đang hoạt động cho Dropdown
-     */
-    public function getActiveFieldTypes(): Collection
-    {
-        return FieldType::where('is_active', true)->get(['id', 'name', 'sport']);
-    }
+        // SỬA TẠI ĐÂY: Đếm tất cả sân chưa bị "Ngừng hoạt động"
+        // Lệnh count() của Laravel sẽ tự động bỏ qua các bản ghi đã Soft Delete (Ngừng hoạt động)
+        // Nên nó sẽ đếm cả sân "Đang hoạt động" và "Đang bảo trì"
+        $currentFieldsCount = Field::count(); 
 
-    /**
-     * Thêm sân mới
-     */
-   public function createField($data)
-    {
-        $tenant = tenant(); 
-        
-        // 1. Đếm số sân đang hoạt động
-        $currentFieldsCount = \App\Models\Tenant\Field::where('tenant_id', $tenant->id)->count();
-        
-        // 2. Lấy giới hạn từ gói cước (Dùng hàm activeSubscription có sẵn của bạn)
         $subscription = $tenant->activeSubscription()->with('plan')->first();
-        $limit = ($subscription && $subscription->plan) ? $subscription->plan->max_fields : 0; 
+        $limit = ($subscription && $subscription->plan) ? $subscription->plan->max_fields : 0;
 
-        // 3. Chặn tạo mới nếu vượt trần
         if ($limit > 0 && $currentFieldsCount >= $limit) {
-            throw new \Exception("Gói cước hiện tại chỉ cho phép tối đa {$limit} sân. Vui lòng nâng cấp gói để tiếp tục.");
+            throw new Exception("Gói cước hiện tại chỉ cho phép tối đa {$limit} sân (bao gồm cả sân đang bảo trì).");
         }
 
-        return \App\Models\Tenant\Field::create($data);
+        return Field::create($data);
     }
 
     /**
-     * Cập nhật thông tin sân
+     * Cập nhật thông tin sân và xử lý khôi phục nếu cần
      */
-    public function updateField(Field $field, array $data): bool
+    public function updateField($id, array $data)
     {
-        return $field->update($data);
+        $field = Field::withTrashed()->findOrFail($id);
+
+        // Nếu sân đang bị xóa mềm mà người dùng bật lại trạng thái hoạt động
+        if ($field->trashed() && isset($data['is_active']) && $data['is_active']) {
+            $field->restore();
+        }
+
+        $field->update($data);
+        return $field;
     }
 
     /**
-     * Xóa sân
+     * Xóa mềm sân và kiểm tra lịch đặt
      */
-    public function deleteField(Field $field): bool|null
+    public function deleteField($id)
     {
+        $field = Field::withTrashed()->findOrFail($id);
+
+        // 1. Kiểm tra lịch đặt trong tương lai (không tính lịch đã hủy)
+        $hasFutureBookings = $field->bookings()
+            ->where('booking_date', '>=', now()->toDateString())
+            ->where('status', '!=', 'cancelled')
+            ->exists();
+
+        if ($hasFutureBookings) {
+            throw new Exception("Không thể ngừng hoạt động sân này vì đang có khách đặt lịch trong tương lai. Vui lòng xử lý lịch đặt trước.");
+        }
+
+        // 2. Chuyển trạng thái về ngừng hoạt động và xóa mềm
+        $field->update(['is_active' => false]);
         return $field->delete();
     }
 }
