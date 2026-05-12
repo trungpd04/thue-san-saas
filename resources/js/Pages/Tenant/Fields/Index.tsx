@@ -54,26 +54,18 @@ export default function FieldIndex() {
     const isOwner = userRole === 'manager';
 
     useEffect(() => {
-        if (flash?.success) message.success(flash.success);
-        if (errors?.error) message.error(errors.error);
-
-        if (flash?.booking_warning && deletingId) {
-            Modal.confirm({
-                title: 'Cảnh báo lịch đặt!',
-                content: flash.booking_warning,
-                okText: 'Vẫn xóa',
-                okType: 'danger',
-                cancelText: 'Hủy bỏ',
-                onOk: () => {
-                    router.delete(`/tenant/${tenantSlug}/fields/${deletingId}?force_delete=1`, {
-                        onSuccess: () => setDeletingId(null),
-                        onError: () => setDeletingId(null)
-                    });
-                },
-                onCancel: () => setDeletingId(null)
-            });
+        // 1. Hiển thị thông báo thành công (Thêm/Sửa/Xóa thành công)
+        if (flash?.success) {
+            message.success(flash.success);
         }
-    }, [flash, errors, deletingId, tenantSlug]);
+
+        // 2. Hiển thị thông báo lỗi (Vượt quota, Sân đang có lịch đặt, v.v.)
+        // Backend sẽ trả lỗi về biến errors.error khi không cho phép xóa
+        if (errors?.error) {
+            message.error(errors.error);
+        }
+
+    }, [flash, errors]);
 
     const showAddModal = () => {
         setEditingField(null);
@@ -92,9 +84,10 @@ export default function FieldIndex() {
         setIsModalVisible(true);
     };
 
-   const handleCancel = () => {
-        setIsModalVisible(false);
-        form.resetFields();
+ const handleCancel = () => {
+        setIsModalVisible(false); // Đóng hộp thoại Modal
+        form.resetFields();       // Dọn sạch dữ liệu hiển thị trên Form (Ant Design)
+        setEditingField(null);    // Dọn sạch State lưu trữ dữ liệu đang sửa (React)
     };
 
     const onFinish = (values: any) => {
@@ -116,8 +109,10 @@ export default function FieldIndex() {
     };
 
   const handleDelete = (id: number) => {
-        // Gọi thẳng lệnh xóa luôn, Inertia sẽ tự động dọn dẹp lỗi khi request thành công
-        router.delete(`/tenant/${tenantSlug}/fields/${id}`);
+        router.delete(`/tenant/${tenantSlug}/fields/${id}`, {
+            onBefore: () => setDeletingId(id),
+            onFinish: () => setDeletingId(null),
+        });
     };
 
     const columns = [
@@ -169,32 +164,42 @@ export default function FieldIndex() {
                 return <Tag color="success">Đang hoạt động</Tag>;
             },
         },
-        {
+     {
             title: 'Hành động', 
             key: 'action',
             render: (_: any, record: Field) => (
                 <Space size="middle">
-                    {/* Chỉ hiển thị nút Sửa/Xóa nếu là Chủ sân VÀ sân CHƯA NGỪNG HOẠT ĐỘNG (chưa bị xóa) */}
-                    {isOwner && !record.deleted_at ? (
+                    {isOwner ? (
                         <>
+                            {/* Nút Sửa: Luôn hiển thị để cho phép chỉnh sửa hoặc khôi phục sân */}
                             <Button 
                                 type="text" 
                                 icon={<EditOutlined />} 
+                                title={record.deleted_at ? "Khôi phục sân" : "Sửa thông tin"}
                                 onClick={() => showEditModal(record)} 
                             />
-                            <Popconfirm
-                                title="Xác nhận chuyển sân này sang trạng thái ngừng hoạt động?"
-                                onConfirm={() => handleDelete(record.id)}
-                                okText="Đồng ý" cancelText="Hủy" okButtonProps={{ danger: true }}
-                            >
-                                <Button type="text" danger icon={<DeleteOutlined />} />
-                            </Popconfirm>
+                            
+                            {/* Nút Xóa: Chỉ hiển thị khi sân đang hoạt động/bảo trì */}
+                            {!record.deleted_at && (
+                                <Popconfirm
+                                    title="Xác nhận ngừng hoạt động sân?"
+                                    description="Sân này sẽ không thể nhận lịch đặt mới cho đến khi được khôi phục."
+                                    onConfirm={() => handleDelete(record.id)} // Chỉ chạy hàm xóa khi bấm "Đồng ý"
+                                    okText="Đồng ý" 
+                                    cancelText="Hủy" 
+                                    okButtonProps={{ danger: true }}
+                                >
+                                    <Button 
+                                        type="text" 
+                                        danger 
+                                        icon={<DeleteOutlined />} 
+                                        title="Ngừng hoạt động"
+                                    />
+                                </Popconfirm>
+                            )}
                         </>
                     ) : (
-                        // Nếu đã ngừng hoạt động, hiển thị chữ in nghiêng mờ thay vì nút
-                        <span style={{ color: '#bfbfbf', fontStyle: 'italic' }}>
-                            {record.deleted_at ? 'Ngừng hoạt động' : 'Nhân viên'}
-                        </span>
+                        <span style={{ color: '#bfbfbf', fontStyle: 'italic' }}>Nhân viên</span>
                     )}
                 </Space>
             ),
