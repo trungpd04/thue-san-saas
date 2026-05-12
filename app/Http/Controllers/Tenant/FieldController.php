@@ -54,13 +54,13 @@ class FieldController extends Controller
         }
     }
 
-    public function destroy($id)
+   public function destroy($id)
     {
         try {
             $this->fieldService->deleteField($id);
-            return back(); // Xóa xong trả về trang cũ, không cần success message nếu bạn muốn tĩnh lặng
+            return back()->with('success', 'Sân đã được chuyển sang trạng thái ngừng hoạt động.');
         } catch (\Exception $e) {
-            // Trả lỗi lịch đặt về giao diện
+            // Trả thông điệp lỗi về biến 'error' trong object 'errors' ở Frontend
             return back()->withErrors(['error' => $e->getMessage()]);
         }
     }

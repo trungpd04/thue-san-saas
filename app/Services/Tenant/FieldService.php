@@ -33,15 +33,31 @@ class FieldService
     /**
      * Cập nhật thông tin sân và xử lý khôi phục nếu cần
      */
-    public function updateField($id, array $data)
+   public function updateField($id, array $data)
     {
         $field = Field::withTrashed()->findOrFail($id);
 
-        // Nếu sân đang bị xóa mềm mà người dùng bật lại trạng thái hoạt động
+        // NẾU SÂN ĐANG BỊ XÓA VÀ NGƯỜI DÙNG MUỐN KHÔI PHỤC (Bật is_active)
         if ($field->trashed() && isset($data['is_active']) && $data['is_active']) {
+            $tenant = tenant();
+            
+            // Đếm số lượng sân đang tồn tại (Đang hoạt động + Đang bảo trì)
+            $currentFieldsCount = Field::count(); 
+            
+            // Lấy giới hạn gói cước
+            $subscription = $tenant->activeSubscription()->with('plan')->first();
+            $limit = ($subscription && $subscription->plan) ? $subscription->plan->max_fields : 0;
+
+            // Kiểm tra: Nếu số sân hiện tại đã chạm hoặc vượt ngưỡng -> Chặn khôi phục
+            if ($limit > 0 && $currentFieldsCount >= $limit) {
+                throw new \Exception("Không thể khôi phục sân. Gói cước hiện tại của bạn chỉ cho phép tối đa {$limit} sân.");
+            }
+
+            // Nếu vượt qua bài kiểm tra thì cho phép hồi sinh sân
             $field->restore();
         }
 
+        // Cập nhật các thông tin khác (tên, loại, địa chỉ...)
         $field->update($data);
         return $field;
     }
@@ -53,17 +69,18 @@ class FieldService
     {
         $field = Field::withTrashed()->findOrFail($id);
 
-        // 1. Kiểm tra lịch đặt trong tương lai (không tính lịch đã hủy)
+        // KIỂM TRA LỊCH ĐẶT: Nếu có là CHẶN LUÔN
         $hasFutureBookings = $field->bookings()
             ->where('booking_date', '>=', now()->toDateString())
             ->where('status', '!=', 'cancelled')
             ->exists();
 
         if ($hasFutureBookings) {
-            throw new Exception("Không thể ngừng hoạt động sân này vì đang có khách đặt lịch trong tương lai. Vui lòng xử lý lịch đặt trước.");
+            // Ném lỗi trực tiếp, không cho phép bất kỳ ngoại lệ nào
+            throw new \Exception("Không thể ngừng hoạt động sân này vì đang có khách đặt lịch trong tương lai. Bạn phải hủy hoặc hoàn thành các lịch đặt trước khi thực hiện thao tác này.");
         }
 
-        // 2. Chuyển trạng thái về ngừng hoạt động và xóa mềm
+        // Nếu không có lịch mới cho phép thực hiện
         $field->update(['is_active' => false]);
         return $field->delete();
     }
