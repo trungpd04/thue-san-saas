@@ -8,6 +8,8 @@ use App\Http\Middleware\InitializeTenancyBySlug;
 use App\Http\Controllers\Tenant\Auth\AuthenticatedTenantSessionController;
 use App\Http\Controllers\Tenant\Auth\RegisteredTenantController;
 use App\Http\Controllers\Tenant\Subscription\SubscriptionController;
+use App\Http\Controllers\Tenant\FieldController;
+
 
 /*
 |--------------------------------------------------------------------------
@@ -36,6 +38,7 @@ Route::middleware([InitializeTenancyBySlug::class])
 
     Route::middleware('auth:tenant')->group(function () {
         Route::get('/dashboard', fn() => Inertia::render('Tenant/TenantDashboard'))->name('tenant.dashboard');
+        Route::resource('fields', FieldController::class)->names('tenant.fields');
 
         // Trang chọn gói và thanh toán
         Route::get('/subscription/register', [SubscriptionController::class, 'index'])->name('tenant.subscription.index');
@@ -49,4 +52,5 @@ Route::middleware([InitializeTenancyBySlug::class])
         Route::get('/subscription/sepay-payment', [SubscriptionController::class, 'sepayPayment'])->name('tenant.subscription.sepay-payment');
         Route::post('/subscription/cancel', [SubscriptionController::class, 'cancel'])->name('tenant.subscription.cancel');
     });
+   
 });
