@@ -3,11 +3,13 @@
 use App\Http\Controllers\Admin\AuthenticatedSessionController;
 use App\Http\Controllers\Tenant\Auth\RegisteredTenantController;
 use App\Http\Controllers\Admin\PlanController;
+use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\PublicFieldController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
 Route::redirect('/', '/admin/dashboard');
+Route::redirect('/admin', '/admin/dashboard');
 
 Route::get('/san', [PublicFieldController::class, 'index'])->name('public.fields.index');
 Route::get('/san/{field}/bookings', [PublicFieldController::class, 'bookings'])->name('public.fields.bookings');
@@ -31,9 +33,7 @@ Route::post('/admin/logout', [AuthenticatedSessionController::class, 'destroy'])
     ->name('admin.logout');
 
 Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
-    Route::get('/dashboard', function () {
-        return Inertia::render('AdminDashboard');
-    })->name('admin.dashboard');
+   Route::get('/dashboard', [DashboardController::class, 'index'])->name('admin.dashboard');
 
     Route::get('/tenant', function () {
         return Inertia::render('Tenant');
