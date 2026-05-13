@@ -30,9 +30,6 @@ Route::middleware([InitializeTenancyBySlug::class])
                 ->middleware('throttle:10,1');
         });
 
-    Route::post('/sepay/webhook', [\App\Http\Controllers\Tenant\SePay\SePayWebhookController::class, 'handleIpn'])
-        ->name('tenant.sepay.webhook');
-
     Route::post('/logout', [AuthenticatedTenantSessionController::class, 'destroy'])
         ->middleware('auth:tenant')
         ->name('tenant.logout');
