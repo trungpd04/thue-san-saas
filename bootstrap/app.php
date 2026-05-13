@@ -19,8 +19,15 @@ return Application::configure(basePath: dirname(__DIR__))
             'role' => EnsureRole::class,
         ]);
 
+        $middleware->trustProxies(at: '*');
+
         $middleware->web(append: [
             HandleInertiaRequests::class,
+        ]);
+
+        $middleware->validateCsrfTokens(except: [
+            '*/sepay/webhook',
+            'sepay/webhook', // Just in case
         ]);
 
         $middleware->redirectGuestsTo(function (Request $request) {

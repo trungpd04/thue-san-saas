@@ -3,7 +3,7 @@
 namespace App\Services\Admin;
 
 use App\Models\Tenant;
-use App\Models\SubscriptionPayment; 
+use App\Models\SubscriptionPayment;
 
 class DashboardService
 {
