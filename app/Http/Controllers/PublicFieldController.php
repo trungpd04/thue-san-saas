@@ -5,16 +5,22 @@ namespace App\Http\Controllers;
 use App\Models\Tenant\Field;
 use App\Http\Requests\StoreBookingRequest;
 use App\Services\PublicFieldService;
+use App\Services\SePayService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 
 class PublicFieldController extends Controller
 {
     protected $publicFieldService;
+    protected $sePayService;
 
-    public function __construct(PublicFieldService $publicFieldService)
-    {
+    public function __construct(
+        PublicFieldService $publicFieldService,
+        SePayService $sePayService,
+    ) {
         $this->publicFieldService = $publicFieldService;
+        $this->sePayService = $sePayService;
     }
 
     public function index()
@@ -58,7 +64,7 @@ class PublicFieldController extends Controller
         $tenant = \App\Models\Tenant::findOrFail($tenant_id);
         $fieldTypeId = $request->query('field_type_id');
         $fieldType = $fieldTypeId ? \App\Models\FieldType::find($fieldTypeId) : null;
-        
+
         return inertia('Public/BookingPage', [
             'tenant' => $tenant,
             'fieldType' => $fieldType
@@ -99,7 +105,7 @@ class PublicFieldController extends Controller
     public function checkout(Request $request)
     {
         $bookingIds = explode(',', $request->query('booking_ids', ''));
-        
+
         // Find bookings (globally since we don't have tenant context yet in the URL)
         $bookings = \App\Models\Tenant\Booking::whereIn('id', $bookingIds)
             ->with(['field', 'tenant'])
@@ -110,15 +116,44 @@ class PublicFieldController extends Controller
         }
 
         $tenant = $bookings->first()->tenant;
+        $totalAmount = (float) $bookings->sum('total_price');
+        $paymentCode = 'BK' . $bookings->first()->id;
+        $bankAccount = null;
+        $paymentError = null;
+
+        if (!$tenant->sepay_company_xid || !$tenant->has_linked_bank) {
+            $paymentError = 'Chu san chua lien ket tai khoan ngan hang SePay Bank Hub.';
+        } else {
+            try {
+                $bankAccounts = $this->sePayService->listBankAccounts($tenant->sepay_company_xid);
+                $bankAccount = collect($bankAccounts)->first(function ($account) use ($tenant) {
+                    return !$tenant->sepay_bank_account_xid
+                        || ($account['xid'] ?? null) === $tenant->sepay_bank_account_xid;
+                }) ?? $bankAccounts[0] ?? null;
+
+                if (!$bankAccount) {
+                    $paymentError = 'Khong tim thay tai khoan ngan hang da lien ket tren SePay Bank Hub.';
+                }
+            } catch (\Throwable $e) {
+                Log::warning('Cannot load SePay Bank Hub account for checkout: ' . $e->getMessage(), [
+                    'tenant_id' => $tenant->id,
+                ]);
+
+                $paymentError = 'Khong the tai thong tin tai khoan SePay Bank Hub. Vui long thu lai sau.';
+            }
+        }
 
         return Inertia::render('Public/Checkout', [
             'bookings' => $bookings,
             'tenant' => $tenant,
-            'sepayConfig' => [
-                'bank_id' => config('services.sepay.bank_id'),
-                'bank_account' => config('services.sepay.bank_account'),
-                'account_name' => config('services.sepay.account_name'),
-            ]
+            'payment' => [
+                'code' => $paymentCode,
+                'amount' => $totalAmount,
+                'bank_account' => $bankAccount,
+                'error' => $paymentError,
+                'webhook_url' => url('/api/webhooks/sepay/bankhub'),
+                'webhook_token' => config('app.env') === 'local' ? config('services.sepay.webhook_key') : null,
+            ],
         ]);
     }
 
@@ -126,7 +161,7 @@ class PublicFieldController extends Controller
     {
         $bookingIds = explode(',', $request->query('booking_ids', ''));
         $bookings = \App\Models\Tenant\Booking::withoutGlobalScopes()->whereIn('id', $bookingIds)->get();
-        
+
         // Check if ALL bookings are paid or confirmed
         $isPaid = $bookings->every(function ($booking) {
             return in_array($booking->status, ['paid', 'confirmed']);

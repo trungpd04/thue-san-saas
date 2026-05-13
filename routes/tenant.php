@@ -30,6 +30,9 @@ Route::middleware([InitializeTenancyBySlug::class])
                 ->middleware('throttle:10,1');
         });
 
+    Route::post('/sepay/webhook', [\App\Http\Controllers\Tenant\SePay\SePayWebhookController::class, 'handleIpn'])
+        ->name('tenant.sepay.webhook');
+
     Route::post('/logout', [AuthenticatedTenantSessionController::class, 'destroy'])
         ->middleware('auth:tenant')
         ->name('tenant.logout');
@@ -48,5 +51,10 @@ Route::middleware([InitializeTenancyBySlug::class])
         Route::get('/subscription/check-status/{ref}', [SubscriptionController::class, 'checkStatus'])->name('tenant.subscription.check-status');
         Route::get('/subscription/sepay-payment', [SubscriptionController::class, 'sepayPayment'])->name('tenant.subscription.sepay-payment');
         Route::post('/subscription/cancel', [SubscriptionController::class, 'cancel'])->name('tenant.subscription.cancel');
+
+        // SePay BankHub Integration for Stadium Owners
+        Route::prefix('sepay')->name('tenant.sepay.')->group(function () {
+            Route::get('/settings', [\App\Http\Controllers\Tenant\SePay\BankHubController::class, 'settings'])->name('settings');
+        });
     });
 });
