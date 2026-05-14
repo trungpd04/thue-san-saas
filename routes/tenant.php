@@ -9,6 +9,7 @@ use App\Http\Controllers\Tenant\Auth\AuthenticatedTenantSessionController;
 use App\Http\Controllers\Tenant\Auth\RegisteredTenantController;
 use App\Http\Controllers\Tenant\Subscription\SubscriptionController;
 use App\Http\Controllers\Tenant\FieldController;
+use App\Http\Controllers\Tenant\DashboardController;
 
 
 /*
@@ -37,7 +38,7 @@ Route::middleware([InitializeTenancyBySlug::class])
         ->name('tenant.logout');
 
     Route::middleware('auth:tenant')->group(function () {
-        Route::get('/dashboard', fn() => Inertia::render('Tenant/TenantDashboard'))->name('tenant.dashboard');
+        Route::get('/dashboard', [DashboardController::class, 'index'])->name('tenant.dashboard');
         Route::resource('fields', FieldController::class)->names('tenant.fields');
 
         // Trang chọn gói và thanh toán
