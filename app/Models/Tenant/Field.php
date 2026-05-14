@@ -7,9 +7,15 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Stancl\Tenancy\Database\Concerns\BelongsToTenant;
+use Illuminate\Database\Eloquent\SoftDeletes;
+
+use App\Models\Tenant\RecurringBooking;
+
+
 
 class Field extends Model
 {
+    use SoftDeletes;
     use BelongsToTenant;
 
     protected $fillable = [
