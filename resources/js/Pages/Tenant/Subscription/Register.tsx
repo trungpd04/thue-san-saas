@@ -326,6 +326,7 @@ export default function Register({
                                         Thời gian (tháng):
                                     </Text>
                                     <InputNumber
+                                        readOnly={plan.id === 4}
                                         min={1}
                                         max={36}
                                         value={months}
@@ -335,6 +336,7 @@ export default function Register({
                                 </div>
 
                                 <Button
+                                    disabled={isActive}
                                     type="primary"
                                     block
                                     size="large"
