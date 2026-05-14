@@ -38,6 +38,9 @@ class HandleInertiaRequests extends Middleware
         return [
             ...parent::share($request),
             'auth.user' => $request->user(),
+            'flash' => [
+                'free_plan_login_popup' => fn () => $request->session()->get('free_plan_login_popup'),
+            ],
             'tenancy' => fn () => [
                 'initialized' => tenancy()->initialized,
                 'tenant' => tenancy()->initialized ? [

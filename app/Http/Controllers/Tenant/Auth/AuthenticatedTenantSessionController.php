@@ -38,6 +38,14 @@ class AuthenticatedTenantSessionController extends Controller
 
         $request->session()->regenerate();
 
+        $subscription = tenant()->activeSubscription()->with('plan')->first();
+
+        if ($subscription?->plan && (float) $subscription->plan->price_monthly === 0.0) {
+            $request->session()->flash('free_plan_login_popup', [
+                'plan_name' => $subscription->plan->name,
+            ]);
+        }
+
         return redirect()->intended(route('tenant.dashboard', ['tenant' => tenant()->slug]));
     }
 
@@ -51,4 +59,3 @@ class AuthenticatedTenantSessionController extends Controller
         return redirect()->route('tenant.login', ['tenant' => tenant()->slug]);
     }
 }
-
