@@ -45,6 +45,7 @@ class TenantRegistrationService
                 'status' => 'active',
                 'trial_ends_at' => now()->addDays(30),
                 'starts_at' => now(),
+                'end_at' => now()->addDays(30),
             ]);
 
             Tenancy::initialize($tenant);

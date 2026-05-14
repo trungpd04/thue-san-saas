@@ -11,6 +11,12 @@ class PlanSeeder extends Seeder
     {
         $plans = [
             [
+                "name" => "Dùng thử",
+                "max_fields" => 2,
+                "max_staff" => 1,
+                "price_monthly" => 0,
+            ],
+            [
                 'name' => 'Co ban',
                 'max_fields' => 3,
                 'max_staff' => 2,
@@ -27,7 +33,7 @@ class PlanSeeder extends Seeder
                 'max_fields' => 50,
                 'max_staff' => 20,
                 'price_monthly' => 1000000,
-            ],
+            ]
         ];
 
         foreach ($plans as $plan) {
