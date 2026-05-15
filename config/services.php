@@ -40,6 +40,11 @@ return [
         'bank_id' => env('SEPAY_BANK_ID'),
         'account_name' => env('SEPAY_ACCOUNT_NAME'),
         'api_key' => env('SEPAY_API_KEY'),
-        'webhook_key' => env('SEPAY_WEBHOOK_TOKEN')
+        'webhook_key' => env('SEPAY_WEBHOOK_TOKEN'),
+        // BankHub Integration
+        'client_id' => env('SEPAY_CLIENT_ID'),
+        'client_secret' => env('SEPAY_CLIENT_SECRET'),
+        'bankhub_env' => env('SEPAY_BANKHUB_ENV', 'sandbox'),
+        'api_url' => env('SEPAY_API_URL', 'https://bankhub-api-sandbox.sepay.vn/v1'),
     ],
 ];

@@ -25,6 +25,11 @@ return Application::configure(basePath: dirname(__DIR__))
             HandleInertiaRequests::class,
         ]);
 
+        $middleware->validateCsrfTokens(except: [
+            '*/sepay/webhook',
+            'sepay/webhook', // Just in case
+        ]);
+
         $middleware->redirectGuestsTo(function (Request $request) {
             if (tenancy()->initialized) {
                 return route('tenant.login', ['tenant' => tenant()->slug]);
