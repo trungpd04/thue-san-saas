@@ -31,10 +31,13 @@ class NotifyExpiringSubscriptions extends Command
 
         $this->info("Đang quét các gói hết hạn vào: " . implode(', ', $targetDates));
 
-        // 2. Truy vấn các gói active có ngày hết hạn rơi đúng vào 3 mốc trên
+        // 2. Truy vấn các gói active hoặc trial có ngày hết hạn rơi đúng vào 3 mốc trên
         $subscriptions = Subscription::with(['tenant.owner', 'plan'])
-            ->where('status', 'active')
-            ->whereIn(DB::raw('DATE(ends_at)'), $targetDates)
+            ->whereIn('status', ['active', 'trial'])
+            ->where(function($query) use ($targetDates) {
+                $query->whereIn(DB::raw('DATE(ends_at)'), $targetDates)
+                      ->orWhereIn(DB::raw('DATE(trial_ends_at)'), $targetDates);
+            })
             ->get();
 
         if ($subscriptions->isEmpty()) {
@@ -46,7 +49,9 @@ class NotifyExpiringSubscriptions extends Command
             // Kiểm tra xem Tenant có chủ sở hữu và email không
             if ($sub->tenant && $sub->tenant->owner && $sub->tenant->owner->email) {
                 Mail::to($sub->tenant->owner->email)->send(new SubscriptionExpiringMail($sub));
-                $this->info("- Đã gửi mail nhắc nhở cho: " . $sub->tenant->name . " (Hết hạn ngày: " . $sub->ends_at->format('d/m/Y') . ")");
+                
+                $expiryDate = $sub->getExpiryDate();
+                $this->info("- Đã gửi mail nhắc nhở cho: " . $sub->tenant->name . " (Hết hạn ngày: " . ($expiryDate ? $expiryDate->format('d/m/Y') : 'N/A') . ")");
             }
         }
 

@@ -40,6 +40,8 @@ class HandleInertiaRequests extends Middleware
             'auth.user' => $request->user(),
             'flash' => [
                 'free_plan_login_popup' => fn () => $request->session()->get('free_plan_login_popup'),
+                'success' => fn () => $request->session()->get('success'),
+                'error' => fn () => $request->session()->get('error'),
             ],
             'tenancy' => fn () => [
                 'initialized' => tenancy()->initialized,
