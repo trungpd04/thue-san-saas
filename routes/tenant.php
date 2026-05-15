@@ -37,8 +37,10 @@ Route::middleware([InitializeTenancyBySlug::class])
         ->name('tenant.logout');
 
     Route::middleware('auth:tenant')->group(function () {
-        Route::get('/dashboard', fn() => Inertia::render('Tenant/TenantDashboard'))->name('tenant.dashboard');
-        Route::resource('fields', FieldController::class)->names('tenant.fields');
+        Route::middleware([\App\Http\Middleware\CheckTenantSubscription::class])->group(function () {
+            Route::get('/dashboard', fn() => Inertia::render('Tenant/TenantDashboard'))->name('tenant.dashboard');
+            Route::resource('fields', FieldController::class)->names('tenant.fields');
+        });
 
         // Trang chọn gói và thanh toán
         Route::get('/subscription/register', [SubscriptionController::class, 'index'])->name('tenant.subscription.index');
