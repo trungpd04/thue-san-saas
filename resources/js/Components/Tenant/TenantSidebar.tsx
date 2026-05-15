@@ -62,6 +62,11 @@ export default function TenantSidebar({ collapsed }: TenantSidebarProps) {
                     key: `${base}/subscription/status`,
                     icon: <CreditCardOutlined />,
                     label: <Link href={`${base}/subscription/status`}>Lịch sử thanh toán</Link>,
+                },
+                {
+                    key: `${base}/sepay/settings`,
+                    icon: <CreditCardOutlined />,
+                    label: <Link href={`${base}/sepay/settings`}>Cấu hình nhận tiền</Link>,
                 }
             ]
         },
