@@ -73,15 +73,20 @@ class SePayBookingService
                         ]);
 
                         // 2. Tạo bản ghi thanh toán chi tiết
-                        Payment::create([
-                            'tenant_id' => $b->tenant_id,
-                            'booking_id' => $b->id,
-                            'customer_id' => $b->customer_id,
-                            'amount' => $b->total_price,
-                            'payment_method' => 'sepay',
-                            'status' => 'success',
-                            'paid_at' => now(),
-                        ]);
+                        Payment::updateOrCreate(
+                            [
+                                'tenant_id' => $b->tenant_id,
+                                'booking_id' => $b->id,
+                            ],
+                            [
+                                'customer_id' => $b->customer_id,
+                                'amount' => $b->total_price,
+                                'payment_method' => 'sepay',
+                                'type' => 'banking',
+                                'status' => 'success',
+                                'paid_at' => now(),
+                            ]
+                        );
                     }
                 });
 

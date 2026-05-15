@@ -9,6 +9,7 @@ use App\Http\Controllers\Tenant\Auth\AuthenticatedTenantSessionController;
 use App\Http\Controllers\Tenant\Auth\RegisteredTenantController;
 use App\Http\Controllers\Tenant\Subscription\SubscriptionController;
 use App\Http\Controllers\Tenant\FieldController;
+use App\Http\Controllers\Tenant\BookingController;
 
 
 /*
@@ -39,6 +40,11 @@ Route::middleware([InitializeTenancyBySlug::class])
     Route::middleware('auth:tenant')->group(function () {
         Route::get('/dashboard', fn() => Inertia::render('Tenant/TenantDashboard'))->name('tenant.dashboard');
         Route::resource('fields', FieldController::class)->names('tenant.fields');
+        Route::get('/booking', [BookingController::class, 'index'])->name('tenant.booking.index');
+        Route::get('/booking/available-slots', [BookingController::class, 'availableSlots'])->name('tenant.booking.available-slots');
+        Route::get('/booking/history', [BookingController::class, 'history'])->name('tenant.booking.history');
+        Route::post('/booking', [BookingController::class, 'store'])->name('tenant.booking.store');
+        Route::delete('/booking/{booking}', [BookingController::class, 'destroy'])->name('tenant.booking.destroy');
 
         // Trang chọn gói và thanh toán
         Route::get('/subscription/register', [SubscriptionController::class, 'index'])->name('tenant.subscription.index');
