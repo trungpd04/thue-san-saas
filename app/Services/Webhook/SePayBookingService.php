@@ -4,102 +4,121 @@ namespace App\Services\Webhook;
 
 use App\Models\Tenant\Booking;
 use App\Models\Tenant\Payment;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class SePayBookingService
 {
-    /**
-     * Xử lý webhook thanh toán đặt sân từ SePay
-     */
-    public function handle($data)
+    public function handle(array $data): array
     {
-        $content = $data['content'] ?? '';
-        $transferAmount = (float) ($data['transferAmount'] ?? 0);
+        $content = $data['content']
+            ?? $data['transaction_content']
+            ?? $data['description']
+            ?? '';
 
-        // Regex lấy mã đặt sân (BK + ID), chấp nhận cả trường hợp có khoảng trắng ở giữa
-        if (preg_match('/BK\s*(\d+)/i', $content, $matches)) {
-            $bookingId = $matches[1];
+        $transferAmount = (float) (
+            $data['transferAmount']
+            ?? $data['amount_in']
+            ?? $data['amount']
+            ?? 0
+        );
 
-            // Tìm booking xuyên qua bộ lọc tenant (do đang ở context webhook trung tâm)
-            $booking = Booking::withoutGlobalScopes()
-                ->where('id', $bookingId)
-                ->whereIn('status', ['locked_pending', 'pending'])
-                ->first();
-
-            if (!$booking) {
-                return [
-                    'handled' => true, 
-                    'success' => false, 
-                    'message' => 'Booking not found or already processed'
-                ];
-            }
-
-            // Kích hoạt ngữ cảnh tenant
-            tenancy()->initialize($booking->tenant_id);
-
-            // Tìm tất cả các booking liên quan (cùng khách hàng, cùng thời điểm khóa, cùng tenant)
-            // để cập nhật hàng loạt (do 1 lần thanh toán cho nhiều slot)
-            $lockedAt = $booking->locked_at;
-            
-            $relatedBookings = Booking::withoutGlobalScopes()
-                ->where('tenant_id', $booking->tenant_id)
-                ->where('customer_id', $booking->customer_id)
-                ->where('locked_at', '>=', $lockedAt->copy()->subSecond())
-                ->where('locked_at', '<=', $lockedAt->copy()->addSecond())
-                ->whereIn('status', ['locked_pending', 'pending'])
-                ->get();
-
-            Log::info("SePay Webhook: Found " . $relatedBookings->count() . " related bookings for BK{$bookingId}");
-
-            $totalRequired = $relatedBookings->sum('total_price');
-
-            if ($transferAmount < (float) $totalRequired) {
-                Log::error("SePay Webhook: Insufficient amount for Booking ID: {$bookingId}. Expected: {$totalRequired}, Received: {$transferAmount}");
-                return [
-                    'handled' => true, 
-                    'success' => false, 
-                    'message' => 'Insufficient amount'
-                ];
-            }
-
-            try {
-                DB::transaction(function () use ($relatedBookings) {
-                    foreach ($relatedBookings as $b) {
-                        // 1. Cập nhật trạng thái Booking sang đã thanh toán
-                        $b->update([
-                            'status' => 'paid',
-                            'note' => $b->note . ' - Đã thanh toán qua SePay lúc ' . now()->format('H:i d/m/Y')
-                        ]);
-
-                        // 2. Tạo bản ghi thanh toán chi tiết
-                        Payment::create([
-                            'tenant_id' => $b->tenant_id,
-                            'booking_id' => $b->id,
-                            'customer_id' => $b->customer_id,
-                            'amount' => $b->total_price,
-                            'payment_method' => 'sepay',
-                            'status' => 'success',
-                            'paid_at' => now(),
-                        ]);
-                    }
-                });
-
-                Log::info("SePay Webhook: Successfully processed Booking ID: {$bookingId} and its related slots.");
-                return [
-                    'handled' => true, 
-                    'success' => true
-                ];
-            } catch (\Exception $e) {
-                Log::error("SePay Booking Webhook ERROR: " . $e->getMessage());
-                throw $e;
-            }
+        if (!preg_match('/BK\s*(\d+)/i', $content, $matches)) {
+            return [
+                'handled' => false,
+                'success' => false,
+                'message' => 'No booking payment code found',
+            ];
         }
 
-        // Nếu không có mã BK, báo lại để controller thử service khác
+        $bookingId = $matches[1];
+        $booking = Booking::withoutGlobalScopes()->where('id', $bookingId)->first();
+
+        if (!$booking) {
+            return [
+                'handled' => true,
+                'success' => false,
+                'message' => 'Booking not found',
+            ];
+        }
+
+        if (in_array($booking->status, ['paid', 'confirmed'], true)) {
+            return [
+                'handled' => true,
+                'success' => true,
+                'message' => 'Booking already paid',
+            ];
+        }
+
+        if (!in_array($booking->status, ['locked_pending', 'pending'], true)) {
+            return [
+                'handled' => true,
+                'success' => false,
+                'message' => 'Booking is not payable',
+            ];
+        }
+
+        tenancy()->initialize($booking->tenant_id);
+
+        $relatedQuery = Booking::withoutGlobalScopes()
+            ->where('tenant_id', $booking->tenant_id)
+            ->where('customer_id', $booking->customer_id)
+            ->whereIn('status', ['locked_pending', 'pending']);
+
+        if ($booking->locked_at) {
+            $relatedQuery
+                ->where('locked_at', '>=', $booking->locked_at->copy()->subSecond())
+                ->where('locked_at', '<=', $booking->locked_at->copy()->addSecond());
+        } else {
+            $relatedQuery->where('id', $booking->id);
+        }
+
+        $relatedBookings = $relatedQuery->get();
+        $totalRequired = (float) $relatedBookings->sum('total_price');
+
+        Log::info('SePay Bank Hub booking payment matched.', [
+            'booking_id' => $bookingId,
+            'related_count' => $relatedBookings->count(),
+            'required' => $totalRequired,
+            'received' => $transferAmount,
+        ]);
+
+        if ($transferAmount < $totalRequired) {
+            return [
+                'handled' => true,
+                'success' => false,
+                'message' => 'Insufficient amount',
+            ];
+        }
+
+        DB::transaction(function () use ($relatedBookings, $data): void {
+            foreach ($relatedBookings as $relatedBooking) {
+                $relatedBooking->update([
+                    'status' => 'paid',
+                    'note' => trim(($relatedBooking->note ? $relatedBooking->note . ' - ' : '') . 'Da thanh toan qua SePay Bank Hub luc ' . now()->format('H:i d/m/Y')),
+                ]);
+
+                Payment::firstOrCreate(
+                    [
+                        'booking_id' => $relatedBooking->id,
+                        'payment_method' => 'sepay_bankhub',
+                        'status' => 'success',
+                    ],
+                    [
+                        'tenant_id' => $relatedBooking->tenant_id,
+                        'customer_id' => $relatedBooking->customer_id,
+                        'amount' => $relatedBooking->total_price,
+                        'paid_at' => now(),
+                        'note' => 'SePay Bank Hub transaction: ' . ($data['transaction_id'] ?? $data['id'] ?? 'sandbox'),
+                    ]
+                );
+            }
+        });
+
         return [
-            'handled' => false,
-            'success' => false
+            'handled' => true,
+            'success' => true,
+            'message' => 'Booking payment processed',
         ];
     }
 }
