@@ -12,6 +12,12 @@ class TenantAuthService
      */
     public function attemptLogin(array $credentials, bool $remember): void
     {
+        if (tenancy()->initialized && ! tenant()->is_active) {
+            throw ValidationException::withMessages([
+                'email' => 'Chủ sân đã bị khóa. Vui lòng liên hệ admin để được hỗ trợ.',
+            ]);
+        }
+
         if (! Auth::guard('tenant')->attempt($credentials, $remember)) {
             throw ValidationException::withMessages([
                 'email' => __('auth.failed'),
@@ -32,4 +38,3 @@ class TenantAuthService
         Auth::guard('tenant')->logout();
     }
 }
-
