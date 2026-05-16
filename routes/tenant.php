@@ -48,6 +48,12 @@ Route::middleware([InitializeTenancyBySlug::class])
             Route::post('/booking', [BookingController::class, 'store'])->name('tenant.booking.store');
             Route::delete('/booking/{booking}', [BookingController::class, 'destroy'])->name('tenant.booking.destroy');
 
+        // Hồ sơ trung tâm
+        Route::get('/profile', [\App\Http\Controllers\Tenant\ProfileController::class, 'edit'])->name('tenant.profile.edit');
+        Route::put('/profile', [\App\Http\Controllers\Tenant\ProfileController::class, 'update'])->name('tenant.profile.update');
+
+        // Trang chọn gói và thanh toán
+        Route::get('/subscription/register', [SubscriptionController::class, 'index'])->name('tenant.subscription.index');
             // Trang chọn gói và thanh toán
             Route::get('/subscription/register', [SubscriptionController::class, 'index'])->name('tenant.subscription.index');
 
