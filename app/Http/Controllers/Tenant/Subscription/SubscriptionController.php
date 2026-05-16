@@ -44,12 +44,16 @@ class SubscriptionController extends Controller
             ->latest()
             ->first();
 
+        // Kiểm tra xem tenant đã từng đăng ký gói nào chưa (kể cả hết hạn)
+        $hasSubscriptionHistory = Subscription::where('tenant_id', $tenant->id)->exists();
+
         return Inertia::render('Tenant/Subscription/Register', [
             'plans' => $plans,
             'activeSubscription' => $activeSubscription,
             'pendingSubscription' => $pendingSubscription,
             // Giữ lại currentSubscription cho các thành phần cũ nếu cần (ưu tiên pending)
-            'currentSubscription' => $pendingSubscription ?? $activeSubscription
+            'currentSubscription' => $pendingSubscription ?? $activeSubscription,
+            'hasSubscriptionHistory' => $hasSubscriptionHistory,
         ]);
     }
 
@@ -80,14 +84,18 @@ class SubscriptionController extends Controller
             'method' => 'sometimes|string|in:sepay,momo',
         ]);
 
-        $result = $this->subscriptionService->register(
-            tenant(),
-            $request->plan_id,
-            $request->months,
-            $request->input('method', 'sepay')
-        );
+        try {
+            $result = $this->subscriptionService->register(
+                tenant(),
+                $request->plan_id,
+                $request->months,
+                $request->input('method', 'sepay')
+            );
 
-        return response()->json($result);
+            return response()->json($result);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 400);
+        }
     }
 
     /**

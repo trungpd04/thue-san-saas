@@ -5,8 +5,8 @@ namespace App\Services\Subscription;
 use App\Models\Plan;
 use App\Models\Subscription;
 use App\Models\SubscriptionPayment;
-use App\Services\Subscription\Strategies\MomoStrategy;
-use App\Services\Subscription\Strategies\SepayStrategy;
+use App\Services\Subscription\Adapters\MomoAdapter;
+use App\Services\Subscription\Adapters\SepayAdapter;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 
@@ -28,6 +28,11 @@ class TenantSubscriptionService
         $months = (int) $months;
 
         return DB::connection('mysql')->transaction(function () use ($plan, $tenant, $months, $method) {
+            $hasHistory = Subscription::where('tenant_id', $tenant->id)->exists();
+            if ($plan->price_monthly == 0 && $hasHistory) {
+                throw new \Exception("Gói dùng thử này chỉ dành cho tài khoản đăng ký lần đầu.");
+            }
+
             // 1. Xác định gói hiện tại và ngày hết hạn thực tế (bao gồm cả Trial)
             $activeSub = Subscription::where('tenant_id', $tenant->id)
                 ->whereIn('status', ['active', 'trial'])
@@ -130,13 +135,13 @@ class TenantSubscriptionService
             ]);
 
             // Sử dụng PaymentManager để xử lý thanh toán
-            $strategy = match ($method) {
-                'momo' => app(MomoStrategy::class),
-                default => app(SepayStrategy::class),
+            $adapter = match ($method) {
+                'momo' => app(MomoAdapter::class),
+                default => app(SepayAdapter::class),
             };
 
             $paymentResult = $this->paymentManager
-                ->setStrategy($strategy)
+                ->setAdapter($adapter)
                 ->processPayment($payment);
 
             return array_merge([
