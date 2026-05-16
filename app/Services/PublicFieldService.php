@@ -12,11 +12,24 @@ use Illuminate\Support\Facades\DB;
 
 class PublicFieldService
 {
-    public function getActiveFields()
+    public function getActiveFields($lat = null, $lng = null, $fieldTypeId = null, $name = null)
     {
-        $fields = Field::with(['tenant', 'fieldType'])
-            ->where('is_active', true)
-            ->get();
+        $query = Field::with(['tenant', 'fieldType'])->active();
+
+        if ($fieldTypeId) {
+            $query->filterByType($fieldTypeId);
+        }
+
+        if ($name) {
+            $query->filterByName($name);
+        }
+
+        if ($lat && $lng) {
+            $query->withDistance($lat, $lng);
+        }
+
+        $fields = $query->get();
+
 
         $grouped = [];
         foreach ($fields as $field) {
@@ -27,7 +40,10 @@ class PublicFieldService
                 $grouped[$key] = [
                     'tenant' => $field->tenant,
                     'field_type' => $field->fieldType,
-                    'location' => $field->location,
+                    'location' => $field->tenant->address,
+                    'latitude' => $field->tenant->latitude,
+                    'longitude' => $field->tenant->longitude,
+                    'distance' => isset($field->distance) ? round($field->distance, 2) : null,
                     'description' => $field->fieldType->description ?? $field->description,
                 ];
             }

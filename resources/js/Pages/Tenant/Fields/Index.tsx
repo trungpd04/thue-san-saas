@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Head, router, usePage } from '@inertiajs/react';
 import { Table, Button, Card, Space, Modal, Form, Input, Select, Switch, Tag, Popconfirm, message } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
-import TenantLayout from '../../../Layout/Tenant/TenantLayout'; 
+import TenantLayout from '../../../Layout/Tenant/TenantLayout';
 
 interface FieldType {
     id: number;
@@ -17,7 +17,7 @@ interface Field {
     location: string;
     description: string;
     is_active: boolean;
-    deleted_at: string | null; 
+    deleted_at: string | null;
     field_type?: FieldType;
 }
 
@@ -27,14 +27,14 @@ interface PageProps {
     fieldTypes: FieldType[];
     flash: {
         success?: string;
-        booking_warning?: string; 
+        booking_warning?: string;
     };
-    errors: Record<string, string> & { error?: string }; 
+    errors: Record<string, string> & { error?: string };
     auth?: {
         user?: {
             id: number;
             name: string;
-            role: any; 
+            role: any;
         }
     };
 }
@@ -48,7 +48,7 @@ export default function FieldIndex() {
     const [deletingId, setDeletingId] = useState<number | null>(null);
 
     const tenantSlug = window.location.pathname.split('/')[2];
-    
+
     // Kiểm tra quyền manager
     const userRole = auth?.user?.role?.value || auth?.user?.role;
     const isOwner = userRole === 'manager';
@@ -84,7 +84,7 @@ export default function FieldIndex() {
         setIsModalVisible(true);
     };
 
- const handleCancel = () => {
+    const handleCancel = () => {
         setIsModalVisible(false); // Đóng hộp thoại Modal
         form.resetFields();       // Dọn sạch dữ liệu hiển thị trên Form (Ant Design)
         setEditingField(null);    // Dọn sạch State lưu trữ dữ liệu đang sửa (React)
@@ -108,7 +108,7 @@ export default function FieldIndex() {
         }
     };
 
-  const handleDelete = (id: number) => {
+    const handleDelete = (id: number) => {
         router.delete(`/tenant/${tenantSlug}/fields/${id}`, {
             onBefore: () => setDeletingId(id),
             onFinish: () => setDeletingId(null),
@@ -116,9 +116,9 @@ export default function FieldIndex() {
     };
 
     const columns = [
-        { 
-            title: 'Tên Sân', 
-            dataIndex: 'name', 
+        {
+            title: 'Tên Sân',
+            dataIndex: 'name',
             key: 'name',
             render: (text: string, record: Field) => (
                 <span style={{ fontWeight: 'bold', color: record.deleted_at ? '#bfbfbf' : 'inherit' }}>
@@ -127,7 +127,7 @@ export default function FieldIndex() {
             )
         },
         {
-            title: 'Loại Sân', 
+            title: 'Loại Sân',
             key: 'field_type',
             render: (_: any, record: Field) => (
                 <Tag color={record.deleted_at ? 'default' : 'blue'}>
@@ -146,53 +146,53 @@ export default function FieldIndex() {
                 </span>
             ),
         },
-       { 
-            title: 'Trạng thái', 
+        {
+            title: 'Trạng thái',
             key: 'status',
             render: (_: any, record: Field) => {
                 // Trường hợp 1: Nếu bị xóa (có deleted_at) -> Ngừng hoạt động (Màu đỏ)
                 if (record.deleted_at) {
                     return <Tag color="error">Ngừng hoạt động</Tag>;
                 }
-                
+
                 // Trường hợp 2: Nếu chưa bị xóa nhưng TẮT công tắc -> Đang bảo trì (Màu cam)
                 if (!record.is_active) {
                     return <Tag color="warning">Đang bảo trì</Tag>;
                 }
-                
+
                 // Trường hợp 3: Chưa xóa và BẬT công tắc -> Đang hoạt động (Màu xanh)
                 return <Tag color="success">Đang hoạt động</Tag>;
             },
         },
-     {
-            title: 'Hành động', 
+        {
+            title: 'Hành động',
             key: 'action',
             render: (_: any, record: Field) => (
                 <Space size="middle">
                     {isOwner ? (
                         <>
                             {/* Nút Sửa: Luôn hiển thị để cho phép chỉnh sửa hoặc khôi phục sân */}
-                            <Button 
-                                type="text" 
-                                icon={<EditOutlined />} 
+                            <Button
+                                type="text"
+                                icon={<EditOutlined />}
                                 title={record.deleted_at ? "Khôi phục sân" : "Sửa thông tin"}
-                                onClick={() => showEditModal(record)} 
+                                onClick={() => showEditModal(record)}
                             />
-                            
+
                             {/* Nút Xóa: Chỉ hiển thị khi sân đang hoạt động/bảo trì */}
                             {!record.deleted_at && (
                                 <Popconfirm
                                     title="Xác nhận ngừng hoạt động sân?"
                                     description="Sân này sẽ không thể nhận lịch đặt mới cho đến khi được khôi phục."
                                     onConfirm={() => handleDelete(record.id)} // Chỉ chạy hàm xóa khi bấm "Đồng ý"
-                                    okText="Đồng ý" 
-                                    cancelText="Hủy" 
+                                    okText="Đồng ý"
+                                    cancelText="Hủy"
                                     okButtonProps={{ danger: true }}
                                 >
-                                    <Button 
-                                        type="text" 
-                                        danger 
-                                        icon={<DeleteOutlined />} 
+                                    <Button
+                                        type="text"
+                                        danger
+                                        icon={<DeleteOutlined />}
                                         title="Ngừng hoạt động"
                                     />
                                 </Popconfirm>
@@ -209,24 +209,24 @@ export default function FieldIndex() {
     return (
         <div>
             <Head title="Quản lý Sân" />
-            <Card 
-                title="Danh sách Sân" 
+            <Card
+                title="Danh sách Sân"
                 extra={isOwner ? <Button type="primary" icon={<PlusOutlined />} onClick={showAddModal}>Thêm sân mới</Button> : null}
                 variant="borderless"
             >
-                <Table 
-                    columns={columns} 
-                    dataSource={fields} 
-                    rowKey="id" 
+                <Table
+                    columns={columns}
+                    dataSource={fields}
+                    rowKey="id"
                     pagination={{ pageSize: 10 }}
                     rowClassName={(record) => record.deleted_at ? 'row-deleted' : ''}
                 />
             </Card>
 
-            <Modal 
-                title={editingField ? "Sửa thông tin sân" : "Thêm sân mới"} 
-                open={isModalVisible} 
-                onCancel={handleCancel} 
+            <Modal
+                title={editingField ? "Sửa thông tin sân" : "Thêm sân mới"}
+                open={isModalVisible}
+                onCancel={handleCancel}
                 footer={null}
                 destroyOnClose
             >
@@ -234,7 +234,7 @@ export default function FieldIndex() {
                     <Form.Item name="name" label="Tên sân" rules={[{ required: true, message: 'Vui lòng nhập tên sân' }]}>
                         <Input placeholder="VD: Sân bóng số 1" />
                     </Form.Item>
-                    
+
                     <Form.Item name="field_type_id" label="Loại sân" rules={[{ required: true, message: 'Vui lòng chọn loại sân' }]}>
                         <Select placeholder="Chọn loại sân">
                             {fieldTypes.map(type => (
@@ -265,7 +265,7 @@ export default function FieldIndex() {
                     </Form.Item>
                 </Form>
             </Modal>
-            
+
             <style>{`
                 .row-deleted {
                     background-color: #fafafa;
