@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Webhook\SePay;
 
 use App\Http\Controllers\Controller;
 use App\Services\Subscription\PaymentManager;
-use App\Services\Subscription\Strategies\SepayStrategy;
+use App\Services\Subscription\Adapters\SepayAdapter;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
@@ -18,7 +18,7 @@ class SePayWebhookController extends Controller
     }
 
     /**
-     * Tiếp nhận webhook từ SePay (gọi PaymentManager với SepayStrategy)
+     * Tiếp nhận webhook từ SePay (gọi PaymentManager với SepayAdapter)
      */
     public function handle(Request $request)
     {
@@ -39,9 +39,9 @@ class SePayWebhookController extends Controller
         }
 
         try {
-            // Sử dụng PaymentManager với SepayStrategy
+            // Sử dụng PaymentManager với SepayAdapter
             $result = $this->paymentManager
-                ->setStrategy(app(SepayStrategy::class))
+                ->setAdapter(app(SepayAdapter::class))
                 ->handleWebhook($request->all());
 
             return response()->json($result);

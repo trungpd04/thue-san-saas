@@ -4,7 +4,7 @@ namespace App\Services\Subscription;
 
 use App\Models\SubscriptionPayment;
 
-interface PaymentStrategy
+interface PaymentAdapter
 {
     /**
      * Tạo thông tin giao dịch (ví dụ: QR URL, Redirect URL)
