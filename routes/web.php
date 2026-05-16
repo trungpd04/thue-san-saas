@@ -4,9 +4,10 @@ use App\Http\Controllers\Admin\AuthenticatedSessionController;
 use App\Http\Controllers\Tenant\Auth\RegisteredTenantController;
 use App\Http\Controllers\Admin\PlanController;
 use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\PaymentHistoryController;
+use App\Http\Controllers\Admin\TenantController;
 use App\Http\Controllers\PublicFieldController;
 use Illuminate\Support\Facades\Route;
-use Inertia\Inertia;
 
 Route::redirect('/', '/admin/dashboard');
 Route::redirect('/admin', '/admin/dashboard');
@@ -35,9 +36,9 @@ Route::post('/admin/logout', [AuthenticatedSessionController::class, 'destroy'])
 Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
    Route::get('/dashboard', [DashboardController::class, 'index'])->name('admin.dashboard');
 
-    Route::get('/tenant', function () {
-        return Inertia::render('Tenant');
-    })->name('admin.tenant');
+    Route::get('/tenant-management', [TenantController::class, 'index'])->name('admin.tenants.index');
+    Route::patch('/tenant-management/{tenant}/status', [TenantController::class, 'updateStatus'])->name('admin.tenants.status');
+    Route::get('/payment-history', [PaymentHistoryController::class, 'index'])->name('admin.payment-history.index');
     Route::resource('plans', PlanController::class)->except(['create', 'show', 'edit']);
 
     require __DIR__ . '/subscription.php';
