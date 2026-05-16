@@ -9,6 +9,7 @@ use App\Http\Controllers\Tenant\Auth\AuthenticatedTenantSessionController;
 use App\Http\Controllers\Tenant\Auth\RegisteredTenantController;
 use App\Http\Controllers\Tenant\Subscription\SubscriptionController;
 use App\Http\Controllers\Tenant\FieldController;
+use App\Http\Controllers\Tenant\FieldPriceController;
 
 
 /*
@@ -37,10 +38,9 @@ Route::middleware([InitializeTenancyBySlug::class])
         ->name('tenant.logout');
 
     Route::middleware('auth:tenant')->group(function () {
-        Route::middleware([\App\Http\Middleware\CheckTenantSubscription::class])->group(function () {
-            Route::get('/dashboard', fn() => Inertia::render('Tenant/TenantDashboard'))->name('tenant.dashboard');
-            Route::resource('fields', FieldController::class)->names('tenant.fields');
-        });
+        Route::get('/dashboard', fn() => Inertia::render('Tenant/TenantDashboard'))->name('tenant.dashboard');
+        Route::resource('fields', FieldController::class)->names('tenant.fields');
+        Route::resource('field-prices', FieldPriceController::class)->names('tenant.field-prices');
 
         // Trang chọn gói và thanh toán
         Route::get('/subscription/register', [SubscriptionController::class, 'index'])->name('tenant.subscription.index');
