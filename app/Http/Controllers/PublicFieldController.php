@@ -6,6 +6,7 @@ use App\Models\Tenant\Field;
 use App\Http\Requests\StoreBookingRequest;
 use App\Services\PublicFieldService;
 use App\Services\SePayService;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
@@ -104,11 +105,24 @@ class PublicFieldController extends Controller
 
     public function checkout(Request $request)
     {
-        $bookingIds = explode(',', $request->query('booking_ids', ''));
+        $bookingIds = collect(explode(',', $request->query('booking_ids', '')))
+            ->map(fn ($id) => (int) trim($id))
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
 
-        // Find bookings (globally since we don't have tenant context yet in the URL)
-        $bookings = \App\Models\Tenant\Booking::whereIn('id', $bookingIds)
-            ->with(['field', 'tenant'])
+        $bookings = \App\Models\Tenant\Booking::withoutGlobalScopes()
+            ->whereIn('id', $bookingIds)
+            ->with([
+                'tenant',
+                'customer' => fn ($query) => $query->withoutGlobalScopes(),
+                'field' => fn ($query) => $query->withoutGlobalScopes()->with('fieldType'),
+                'fieldSpecialEvent' => fn ($query) => $query->withoutGlobalScopes(),
+                'payments' => fn ($query) => $query->withoutGlobalScopes()->latest(),
+            ])
+            ->orderBy('booking_date')
+            ->orderBy('start_time')
             ->get();
 
         if ($bookings->isEmpty()) {
@@ -144,7 +158,7 @@ class PublicFieldController extends Controller
         }
 
         return Inertia::render('Public/Checkout', [
-            'bookings' => $bookings,
+            'bookings' => $this->formatCheckoutBookings($bookings),
             'tenant' => $tenant,
             'payment' => [
                 'code' => $paymentCode,
@@ -159,8 +173,24 @@ class PublicFieldController extends Controller
 
     public function checkPaymentStatus(Request $request)
     {
-        $bookingIds = explode(',', $request->query('booking_ids', ''));
-        $bookings = \App\Models\Tenant\Booking::withoutGlobalScopes()->whereIn('id', $bookingIds)->get();
+        $bookingIds = collect(explode(',', $request->query('booking_ids', '')))
+            ->map(fn ($id) => (int) trim($id))
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+
+        $bookings = \App\Models\Tenant\Booking::withoutGlobalScopes()
+            ->whereIn('id', $bookingIds)
+            ->with([
+                'customer' => fn ($query) => $query->withoutGlobalScopes(),
+                'field' => fn ($query) => $query->withoutGlobalScopes()->with('fieldType'),
+                'fieldSpecialEvent' => fn ($query) => $query->withoutGlobalScopes(),
+                'payments' => fn ($query) => $query->withoutGlobalScopes()->latest(),
+            ])
+            ->orderBy('booking_date')
+            ->orderBy('start_time')
+            ->get();
 
         // Check if ALL bookings are paid or confirmed
         $isPaid = $bookings->every(function ($booking) {
@@ -169,7 +199,64 @@ class PublicFieldController extends Controller
 
         return response()->json([
             'paid' => $isPaid,
-            'status' => $bookings->pluck('status', 'id')
+            'status' => $bookings->pluck('status', 'id'),
+            'bookings' => $this->formatCheckoutBookings($bookings),
         ]);
+    }
+
+    private function formatCheckoutBookings(Collection $bookings): array
+    {
+        return $bookings->map(function ($booking) {
+            $payment = $booking->payments->first();
+
+            return [
+                'id' => $booking->id,
+                'code' => 'BK' . $booking->id,
+                'tenant_id' => $booking->tenant_id,
+                'booking_date' => optional($booking->booking_date)->toDateString(),
+                'start_time' => $booking->start_time,
+                'end_time' => $booking->end_time,
+                'base_price' => (float) $booking->base_price,
+                'event_surcharge_amount' => (float) $booking->event_surcharge_amount,
+                'total_price' => (float) $booking->total_price,
+                'pricing_breakdown' => $booking->pricing_breakdown ?? [],
+                'status' => $booking->status,
+                'locked_at' => optional($booking->locked_at)->toIso8601String(),
+                'created_at' => optional($booking->created_at)->toIso8601String(),
+                'note' => $booking->note,
+                'customer' => [
+                    'id' => $booking->customer?->id,
+                    'name' => $booking->customer?->name,
+                    'phone' => $booking->customer?->phone,
+                    'email' => $booking->customer?->email,
+                    'address' => $booking->customer?->address,
+                ],
+                'field' => [
+                    'id' => $booking->field?->id,
+                    'name' => $booking->field?->name,
+                    'location' => $booking->field?->location,
+                    'description' => $booking->field?->description,
+                    'field_type' => [
+                        'id' => $booking->field?->fieldType?->id,
+                        'name' => $booking->field?->fieldType?->name,
+                    ],
+                ],
+                'special_event' => $booking->fieldSpecialEvent ? [
+                    'id' => $booking->fieldSpecialEvent->id,
+                    'title' => $booking->fieldSpecialEvent->title,
+                    'effect' => $booking->fieldSpecialEvent->effect,
+                    'surge_percent' => $booking->fieldSpecialEvent->surge_percent,
+                ] : null,
+                'payment' => $payment ? [
+                    'id' => $payment->id,
+                    'amount' => (float) $payment->amount,
+                    'payment_method' => $payment->payment_method,
+                    'type' => $payment->type,
+                    'status' => $payment->status,
+                    'paid_at' => optional($payment->paid_at)->toIso8601String(),
+                    'note' => $payment->note,
+                ] : null,
+            ];
+        })->values()->all();
     }
 }

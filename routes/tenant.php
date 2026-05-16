@@ -6,9 +6,10 @@ use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use App\Http\Middleware\InitializeTenancyBySlug;
 use App\Http\Controllers\Tenant\Auth\AuthenticatedTenantSessionController;
-use App\Http\Controllers\Tenant\Auth\RegisteredTenantController;
 use App\Http\Controllers\Tenant\Subscription\SubscriptionController;
 use App\Http\Controllers\Tenant\FieldController;
+use App\Http\Controllers\Tenant\BookingController;
+use App\Http\Controllers\Tenant\FieldPriceController;
 
 
 /*
