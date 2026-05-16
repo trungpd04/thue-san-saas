@@ -35,6 +35,11 @@ export default function TenantSidebar({ collapsed }: TenantSidebarProps) {
             label: <Link href={`${base}/fields`}>Quản lý sân</Link>,
         },
         {
+            key: `${base}/field-prices`,
+            icon: <CreditCardOutlined />,
+            label: <Link href={`${base}/field-prices`}>Cấu hình giá</Link>,
+        },
+        {
             key: `${base}/booking`,
             icon: <CalendarOutlined />,
             label: <Link href={`${base}/booking`}>Đặt sân</Link>,

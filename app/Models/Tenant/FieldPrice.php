@@ -12,6 +12,7 @@ class FieldPrice extends Model
     protected $fillable = [
         'tenant_id',
         'field_type_id',
+        'field_id',
         'start_time',
         'end_time',
         'day_type',
