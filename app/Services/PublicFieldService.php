@@ -6,6 +6,7 @@ use App\Models\Tenant\Field;
 use App\Models\Tenant\Booking;
 use App\Models\Tenant\FieldPrice;
 use App\Models\Tenant\Customer;
+use App\Models\Tenant\Payment;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
@@ -157,11 +158,13 @@ class PublicFieldService
         ];
     }
 
-    public function storeBooking($tenant_id, array $validatedData)
+    public function storeBooking($tenant_id, array $validatedData, array $options = [])
     {
         $dateStr = $validatedData['date'];
         $breakdown = $validatedData['pricing_breakdown'];
         $now = now(); // Capture once for all bookings in this transaction
+        $paymentType = $validatedData['payment_type'] ?? $options['payment_type'] ?? 'banking';
+        $bookedBy = $options['booked_by'] ?? null;
 
         DB::beginTransaction();
         try {
@@ -190,13 +193,13 @@ class PublicFieldService
                         if ($lastSlot['end_time'] === $slot['start_time']) {
                             $currentGroup[] = $slot;
                         } else {
-                            $createdBookings[] = $this->createBookingFromGroup($tenant_id, $fieldId, $customer->id, $dateStr, $currentGroup, $validatedData['note'] ?? null, $now);
+                            $createdBookings[] = $this->createBookingFromGroup($tenant_id, $fieldId, $customer->id, $dateStr, $currentGroup, $validatedData['note'] ?? null, $now, $paymentType, $bookedBy);
                             $currentGroup = [$slot];
                         }
                     }
                 }
                 if (!empty($currentGroup)) {
-                    $createdBookings[] = $this->createBookingFromGroup($tenant_id, $fieldId, $customer->id, $dateStr, $currentGroup, $validatedData['note'] ?? null, $now);
+                    $createdBookings[] = $this->createBookingFromGroup($tenant_id, $fieldId, $customer->id, $dateStr, $currentGroup, $validatedData['note'] ?? null, $now, $paymentType, $bookedBy);
                 }
             }
             DB::commit();
@@ -227,13 +230,15 @@ class PublicFieldService
         }
     }
 
-    private function createBookingFromGroup($tenant_id, $field_id, $customer_id, $date, $slots, $note = null, $lockedAt = null)
+    private function createBookingFromGroup($tenant_id, $field_id, $customer_id, $date, $slots, $note = null, $lockedAt = null, string $paymentType = 'banking', $bookedBy = null)
     {
         $startTime = $slots[0]['start_time'] . ':00';
         $endTime = end($slots)['end_time'] . ':00';
         $totalPrice = collect($slots)->sum('price');
         
-        return Booking::create([
+        $isCash = $paymentType === 'cash';
+
+        $booking = Booking::create([
             'tenant_id' => $tenant_id,
             'field_id' => $field_id,
             'customer_id' => $customer_id,
@@ -243,9 +248,24 @@ class PublicFieldService
             'base_price' => $totalPrice,
             'total_price' => $totalPrice,
             'pricing_breakdown' => collect($slots)->map(function ($s) { return (array)$s; })->toArray(),
-            'status' => 'locked_pending',
+            'status' => $isCash ? 'paid' : 'locked_pending',
             'locked_at' => $lockedAt ?: now(),
-            'note' => $note ?: 'Web public booking',
+            'note' => $note ?: ($bookedBy ? 'Offline staff booking' : 'Web public booking'),
+            'booked_by' => $bookedBy,
         ]);
+
+        Payment::create([
+            'tenant_id' => $tenant_id,
+            'booking_id' => $booking->id,
+            'customer_id' => $customer_id,
+            'amount' => $totalPrice,
+            'payment_method' => $isCash ? 'cash' : 'sepay',
+            'type' => $paymentType,
+            'status' => $isCash ? 'success' : 'pending',
+            'paid_at' => $isCash ? now() : null,
+            'note' => $bookedBy ? 'Staff selected payment type' : 'Public booking payment',
+        ]);
+
+        return $booking;
     }
 }

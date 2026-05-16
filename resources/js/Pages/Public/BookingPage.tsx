@@ -72,6 +72,7 @@ export default function BookingPage({ tenant, fieldType }: any) {
                 customer_name: customerName,
                 customer_phone: customerPhone,
                 note: notes,
+                payment_type: 'banking',
                 total_price: totalPrice,
                 pricing_breakdown: selectedSlots
             });

@@ -44,6 +44,10 @@ type RegisterPageProps = {
             slug?: string;
         } | null;
     };
+    flash?: {
+        error?: string;
+        success?: string;
+    };
 };
 
 export default function Register({
@@ -51,13 +55,15 @@ export default function Register({
     activeSubscription,
     pendingSubscription,
     currentSubscription, // Vẫn nhận để tương thích ngược nếu cần
+    hasSubscriptionHistory = false,
 }: {
     plans: Plan[];
     activeSubscription: any;
     pendingSubscription: any;
     currentSubscription: any;
+    hasSubscriptionHistory?: boolean;
 }) {
-    const { tenancy } = usePage<RegisterPageProps>().props;
+    const { tenancy, flash } = usePage<RegisterPageProps>().props;
     const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null);
     const [months, setMonths] = useState(1);
     const [loading, setLoading] = useState(false);
@@ -166,6 +172,15 @@ export default function Register({
     // };
     const { message } = App.useApp();
 
+    useEffect(() => {
+        if (flash?.error) {
+            message.error(flash.error);
+        }
+        if (flash?.success) {
+            message.success(flash.success);
+        }
+    }, [flash]);
+
     const handleCreateRequest = async (plan: Plan) => {
         setSelectedPlan(plan);
         setLoading(true);
@@ -193,9 +208,9 @@ export default function Register({
                 // Chuyển hướng sang trang thanh toán SePay
                 window.location.href = `${tenantBasePath}/subscription/sepay-payment?ref=${response.data.transaction_ref}`;
             }
-        } catch (err) {
+        } catch (err: any) {
             console.error(err);
-            message.error("Có lỗi xảy ra, vui lòng thử lại sau");
+            message.error(err.response?.data?.message || "Có lỗi xảy ra, vui lòng thử lại sau");
         } finally {
             setLoading(false);
         }
@@ -204,6 +219,25 @@ export default function Register({
     return (
         <div style={{ padding: "24px", maxWidth: 1200, margin: "0 auto" }}>
             <Head title="Đăng ký gói dịch vụ" />
+
+            {flash?.error && (
+                <Alert
+                    message="Thông báo"
+                    description={flash.error}
+                    type="error"
+                    showIcon
+                    style={{ marginBottom: 24 }}
+                />
+            )}
+            {flash?.success && (
+                <Alert
+                    message="Thành công"
+                    description={flash.success}
+                    type="success"
+                    showIcon
+                    style={{ marginBottom: 24 }}
+                />
+            )}
 
             {/* Phần hiển thị Gói hiện tại - Giống index Admin */}
             {displaySubscriptions.length > 0 && (
@@ -326,7 +360,7 @@ export default function Register({
                                         Thời gian (tháng):
                                     </Text>
                                     <InputNumber
-                                        readOnly={plan.id === 4}
+                                        readOnly={price === 0}
                                         min={1}
                                         max={36}
                                         value={months}
@@ -336,7 +370,7 @@ export default function Register({
                                 </div>
 
                                 <Button
-                                    disabled={isActive}
+                                    disabled={isActive || (price === 0 && hasSubscriptionHistory)}
                                     type="primary"
                                     block
                                     size="large"
@@ -349,7 +383,7 @@ export default function Register({
                                         fontWeight: "bold",
                                     }}
                                 >
-                                    Đăng ký ngay
+                                    {isActive ? "Đang dùng" : (price === 0 && hasSubscriptionHistory ? "Chỉ dành cho tài khoản mới" : "Đăng ký ngay")}
                                 </Button>
                             </Card>
                         </Col>
