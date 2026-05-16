@@ -1,14 +1,14 @@
 <?php
 
-namespace App\Services\Subscription\Strategies;
+namespace App\Services\Subscription\Adapters;
 
-use App\Services\Subscription\PaymentStrategy;
+use App\Services\Subscription\PaymentAdapter;
 use App\Models\SubscriptionPayment;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
 use App\Models\Subscription;
 
-class SepayStrategy implements PaymentStrategy
+class SepayAdapter implements PaymentAdapter
 {
     protected string $bankAcc;
     protected string $bankId;
@@ -57,7 +57,7 @@ class SepayStrategy implements PaymentStrategy
         tenancy()->initialize($payment->tenant_id);
 
         if ($transferAmount < $payment->amount) {
-            Log::error("SePay Strategy: Insufficient amount for Ref: {$transactionRef}. Expected: {$payment->amount}, Got: {$transferAmount}");
+            Log::error("SePay Adapter: Insufficient amount for Ref: {$transactionRef}. Expected: {$payment->amount}, Got: {$transferAmount}");
             return ['success' => false, 'message' => 'Insufficient amount'];
         }
 
@@ -93,10 +93,10 @@ class SepayStrategy implements PaymentStrategy
                 }
             });
 
-            Log::info("SePay Strategy: Successfully processed Ref: {$transactionRef}");
+            Log::info("SePay Adapter: Successfully processed Ref: {$transactionRef}");
             return ['success' => true];
         } catch (\Exception $e) {
-            Log::error("SePay Strategy ERROR: " . $e->getMessage());
+            Log::error("SePay Adapter ERROR: " . $e->getMessage());
             return ['success' => false, 'message' => $e->getMessage()];
         }
     }

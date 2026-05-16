@@ -1,11 +1,11 @@
 <?php
 
-namespace App\Services\Subscription\Strategies;
+namespace App\Services\Subscription\Adapters;
 
-use App\Services\Subscription\PaymentStrategy;
+use App\Services\Subscription\PaymentAdapter;
 use App\Models\SubscriptionPayment;
 
-class MomoStrategy implements PaymentStrategy
+class MomoAdapter implements PaymentAdapter
 {
     public function createTransaction(SubscriptionPayment $payment): array
     {
