@@ -48,4 +48,9 @@ class Subscription extends Model
     {
         return $this->status === 'trial' && $this->trial_ends_at?->isPast();
     }
+
+    public function getExpiryDate()
+    {
+        return $this->status === 'trial' ? $this->trial_ends_at : $this->ends_at;
+    }
 }
