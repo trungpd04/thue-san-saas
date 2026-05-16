@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { Layout, Menu, Typography, MenuProps, Space } from 'antd';
 import { AppstoreOutlined, CalendarOutlined, CreditCardOutlined, DashboardOutlined, UserOutlined } from '@ant-design/icons';
 import { Link, usePage } from '@inertiajs/react';
@@ -16,6 +16,7 @@ export default function TenantSidebar({ collapsed }: TenantSidebarProps) {
     const { tenancy } = props;
     const slug = tenancy?.tenant?.slug;
     const base = slug ? `/tenant/${slug}` : '/tenant';
+    const bookingFieldTypes = props.tenantBookingFieldTypes || [];
 
     const menuItems: MenuItem[] = [
         {
@@ -23,7 +24,6 @@ export default function TenantSidebar({ collapsed }: TenantSidebarProps) {
             icon: <DashboardOutlined />,
             label: <Link href={`${base}/dashboard`}>Tổng quan</Link>,
         },
-        
         {
             key: `${base}/customer`,
             icon: <UserOutlined />,
@@ -40,9 +40,19 @@ export default function TenantSidebar({ collapsed }: TenantSidebarProps) {
             label: <Link href={`${base}/field-prices`}>Cấu hình giá</Link>,
         },
         {
-            key: `${base}/booking`,
+            key: 'booking-group',
             icon: <CalendarOutlined />,
-            label: <Link href={`${base}/booking`}>Đặt sân</Link>,
+            label: 'Quản lý đặt sân',
+            children: [
+                {
+                    key: `${base}/booking`,
+                    label: <Link href={`${base}/booking`}>Tất cả môn thể thao</Link>,
+                },
+                ...bookingFieldTypes.map((fieldType: any) => ({
+                    key: `${base}/booking?field_type_id=${fieldType.id}`,
+                    label: <Link href={`${base}/booking?field_type_id=${fieldType.id}`}>{fieldType.name}</Link>,
+                })),
+            ],
         },
         {
             key: 'subscription-group',
@@ -72,7 +82,8 @@ export default function TenantSidebar({ collapsed }: TenantSidebarProps) {
         },
     ];
 
-    const activeKey = url; // Simplified for now
+    const activeKey = url;
+    const defaultOpenKeys = url.startsWith(`${base}/booking`) ? ['booking-group'] : [];
 
     return (
         <Sider
@@ -130,6 +141,7 @@ export default function TenantSidebar({ collapsed }: TenantSidebarProps) {
                 theme="dark"
                 mode="inline"
                 selectedKeys={[activeKey]}
+                defaultOpenKeys={defaultOpenKeys}
                 items={menuItems}
                 style={{ marginTop: 8, border: 'none' }}
             />
