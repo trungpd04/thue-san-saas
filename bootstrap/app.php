@@ -29,6 +29,15 @@ return Application::configure(basePath: dirname(__DIR__))
             if (tenancy()->initialized) {
                 return route('tenant.login', ['tenant' => tenant()->slug]);
             }
+
+            if ($request->is('tenant/*')) {
+                $slug = $request->segment(2);
+
+                if (is_string($slug) && $slug !== '') {
+                    return url("/tenant/{$slug}/login");
+                }
+            }
+
             return route('admin.login');
         });
 
