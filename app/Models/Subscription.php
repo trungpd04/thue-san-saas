@@ -34,6 +34,11 @@ class Subscription extends Model
         return $this->belongsTo(Plan::class);
     }
 
+    public function tenant(): BelongsTo
+    {
+        return $this->belongsTo(Tenant::class);
+    }
+
     public function payments(): HasMany
     {
         return $this->hasMany(SubscriptionPayment::class);
@@ -47,5 +52,10 @@ class Subscription extends Model
     public function isTrialExpired(): bool
     {
         return $this->status === 'trial' && $this->trial_ends_at?->isPast();
+    }
+
+    public function getExpiryDate()
+    {
+        return $this->status === 'trial' ? $this->trial_ends_at : $this->ends_at;
     }
 }

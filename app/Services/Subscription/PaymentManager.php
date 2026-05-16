@@ -7,14 +7,14 @@ use Exception;
 
 class PaymentManager
 {
-    protected ?PaymentStrategy $strategy = null;
+    protected ?PaymentAdapter $adapter = null;
 
     /**
-     * Thiết lập strategy thanh toán
+     * Thiết lập adapter thanh toán
      */
-    public function setStrategy(PaymentStrategy $strategy): self
+    public function setAdapter(PaymentAdapter $adapter): self
     {
-        $this->strategy = $strategy;
+        $this->adapter = $adapter;
         return $this;
     }
 
@@ -23,11 +23,11 @@ class PaymentManager
      */
     public function processPayment(SubscriptionPayment $payment): array
     {
-        if (!$this->strategy) {
-            throw new Exception("Payment strategy not set.");
+        if (!$this->adapter) {
+            throw new Exception("Payment adapter not set.");
         }
 
-        return $this->strategy->createTransaction($payment);
+        return $this->adapter->createTransaction($payment);
     }
 
     /**
@@ -35,10 +35,10 @@ class PaymentManager
      */
     public function handleWebhook(array $payload): array
     {
-        if (!$this->strategy) {
-            throw new Exception("Payment strategy not set.");
+        if (!$this->adapter) {
+            throw new Exception("Payment adapter not set.");
         }
 
-        return $this->strategy->processWebhook($payload);
+        return $this->adapter->processWebhook($payload);
     }
 }
