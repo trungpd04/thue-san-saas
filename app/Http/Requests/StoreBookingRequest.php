@@ -27,6 +27,7 @@ class StoreBookingRequest extends FormRequest
             'customer_name' => 'required|string|max:255',
             'customer_phone' => 'required|string|max:20',
             'note' => 'nullable|string|max:1000',
+            'payment_type' => 'sometimes|in:cash,banking',
             'total_price' => 'required|numeric|min:0',
             'pricing_breakdown' => 'required|array',
             'pricing_breakdown.*.field_id' => 'required|exists:fields,id',

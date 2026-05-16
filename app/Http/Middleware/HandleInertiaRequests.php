@@ -51,6 +51,17 @@ class HandleInertiaRequests extends Middleware
                     'slug' => tenant()->slug,
                 ] : null,
             ],
+            'tenantBookingFieldTypes' => fn () => tenancy()->initialized && auth('tenant')->check()
+                ? \App\Models\FieldType::query()
+                    ->where('is_active', true)
+                    ->orderBy('name')
+                    ->get(['id', 'name', 'sport'])
+                    ->map(fn ($fieldType) => [
+                        'id' => $fieldType->id,
+                        'name' => $fieldType->name,
+                        'sport' => $fieldType->sport,
+                    ])
+                : [],
         ];
     }
 }
