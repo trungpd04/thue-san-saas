@@ -24,12 +24,25 @@ class PublicFieldController extends Controller
         $this->sePayService = $sePayService;
     }
 
-    public function index()
+    public function index(Request $request)
     {
-        $fields = $this->publicFieldService->getActiveFields();
+        $lat = $request->query('lat');
+        $lng = $request->query('lng');
+        $fieldTypeId = $request->query('field_type_id');
+        $name = $request->query('name');
+
+        $fields = $this->publicFieldService->getActiveFields($lat, $lng, $fieldTypeId, $name);
+        $fieldTypes = \App\Models\FieldType::all();
 
         return Inertia::render('Public/Fields', [
             'fields' => $fields,
+            'fieldTypes' => $fieldTypes,
+            'filters' => [
+                'lat' => $lat,
+                'lng' => $lng,
+                'field_type_id' => $fieldTypeId,
+                'name' => $name,
+            ]
         ]);
     }
 
