@@ -1,6 +1,6 @@
 ﻿import React from 'react';
 import { Layout, Menu, Typography, MenuProps, Space } from 'antd';
-import { AppstoreOutlined, CalendarOutlined, CreditCardOutlined, DashboardOutlined, UserOutlined } from '@ant-design/icons';
+import { AppstoreOutlined, CalendarOutlined, CreditCardOutlined, DashboardOutlined, SettingOutlined, UserOutlined } from '@ant-design/icons';
 import { Link, usePage } from '@inertiajs/react';
 
 const { Sider } = Layout;
@@ -73,6 +73,13 @@ export default function TenantSidebar({ collapsed }: TenantSidebarProps) {
                     icon: <CreditCardOutlined />,
                     label: <Link href={`${base}/subscription/status`}>Lịch sử thanh toán</Link>,
                 },
+            ]
+        },
+        {
+            key: 'settings-group',
+            icon: <SettingOutlined />,
+            label: 'Cài đặt',
+            children: [
                 {
                     key: `${base}/sepay/settings`,
                     icon: <CreditCardOutlined />,
@@ -83,7 +90,11 @@ export default function TenantSidebar({ collapsed }: TenantSidebarProps) {
     ];
 
     const activeKey = url;
-    const defaultOpenKeys = url.startsWith(`${base}/booking`) ? ['booking-group'] : [];
+    const defaultOpenKeys = [
+        url.startsWith(`${base}/booking`) ? 'booking-group' : null,
+        url.startsWith(`${base}/subscription`) ? 'subscription-group' : null,
+        url.startsWith(`${base}/sepay`) ? 'settings-group' : null,
+    ].filter(Boolean) as string[];
 
     return (
         <Sider
