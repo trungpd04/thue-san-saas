@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
 use App\Http\Controllers\SaasLandingController;
+use App\Http\Controllers\TenantPublicController;
 
 Route::redirect('/', '/admin/dashboard');
 Route::redirect('/admin', '/admin/dashboard');
@@ -50,3 +51,9 @@ Route::get('/', [SaasLandingController::class, 'index'])->name('saas.landing');
 
 // Định tuyến tiếp nhận thông tin khi khách hàng gửi Form đăng ký mở bãi sân mới
 Route::post('/register-tenant', [SaasLandingController::class, 'registerTenant'])->name('saas.register_tenant');
+
+
+// Route hiển thị trang công khai của từng bãi sân dựa vào slug
+Route::get('/san/{slug}', [TenantPublicController::class, 'show'])->name('tenant.public.index');
+// THÊM ROUTE NÀY: Route xử lý khi bấm nút "Xem lịch trống" (Mồi sẵn cho Task 23)
+Route::get('/san/{slug}/dat-lich/{field_id}', [TenantPublicController::class, 'schedule'])->name('tenant.public.schedule');

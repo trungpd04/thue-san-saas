@@ -11,6 +11,7 @@ class Tenant extends BaseTenant
 {
     use HasScopedValidationRules;
 
+
     public static function getCustomColumns(): array
     {
         return [
