@@ -20,7 +20,7 @@ class SaasLandingService
         try {
             DB::beginTransaction();
 
-            // 1. Thuật toán xử lý sinh trùng Tenant Slug cực tốt của bạn
+          
             $slug = Str::slug($data['company_name']);
             $originalSlug = $slug;
             $count = 1;
@@ -29,8 +29,6 @@ class SaasLandingService
                 $count++;
             }
 
-
-            // 2. Tạo bản ghi bãi bến Tenant
             $tenant = Tenant::create([
                 'name'      => $data['company_name'],
                 'slug'      => $slug,
@@ -39,35 +37,33 @@ class SaasLandingService
                 'is_active' => 1,
             ]);
 
-            // 3. Tạo tài khoản User với vai trò là Chủ sân (tenant_owner)
+     
             $user = User::create([
                 'tenant_id' => $tenant->id,
                 'name'      => $data['name'],
                 'email'     => $data['email'],
-
                 'password'  => Hash::make($data['password']),
                 'role'      => 'tenant_owner',
                 'is_active' => 1
             ]);
 
-            // 4. Tìm kiếm thông tin gói cước để tính toán chu kỳ
+           
             $plan = Plan::findOrFail($data['plan_id']);
 
-            // Thiết lập ngày bắt đầu và kết thúc chu kỳ (Mặc định gói tháng)
+        
             $startsAt = Carbon::now();
             $endsAt = Carbon::now()->addMonth();
 
             $subscription = Subscription::create([
                 'tenant_id'     => $tenant->id,
                 'plan_id'       => $plan->id,
-                'status'        => 'trial', // Trạng thái dùng thử ban đầu
+                'status'        => 'trial', 
                 'starts_at'     => $startsAt,
                 'ends_at'       => $endsAt,
-                'trial_ends_at' => Carbon::now()->addDays(7) // Đổi sang dùng Carbon cho đồng bộ hệ thống
+                'trial_ends_at' => Carbon::now()->addDays(7) 
             ]);
 
-            // 5. ĐẮP THÊM LOGIC: Tạo bản ghi hóa đơn thanh toán (subscription_payments)
-            // Giúp Database đầy đủ dữ liệu, không bị lỗi logic ràng buộc (Constraints)
+
             SubscriptionPayment::create([
                 'tenant_id'            => $tenant->id,
                 'subscription_id'      => $subscription->id,
@@ -91,5 +87,23 @@ class SaasLandingService
             DB::rollBack();
             throw $e;
         }
+    }
+
+
+    public function getAvailablePlans()
+    {
+ 
+        return Plan::where('is_active', 1)
+            ->select('id', 'name', 'price_monthly as price', 'max_fields', 'max_staff')
+            ->get()
+            ->map(function ($plan) {
+                $plan->features = [
+                    "Hỗ trợ quản lý tối đa {$plan->max_fields} sân bãi",
+                    "Phân quyền tối đa {$plan->max_staff} nhân viên vận hành",
+                    "Hệ thống tự động chia ca lưới ca đá thông minh",
+                    "Báo cáo thống kê doanh thu thời gian thực chuẩn xác"
+                ];
+                return $plan;
+            });
     }
 }
