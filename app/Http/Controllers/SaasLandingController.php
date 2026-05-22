@@ -3,14 +3,16 @@
 namespace App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
-use App\Models\Plan;
-use App\Services\Saas\SaasLandingService; 
+use App\Services\Saas\SaasLandingService;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
+use Inertia\Response;
 use Exception;
 
 class SaasLandingController extends Controller
 {
     protected $saasService;
+
 
     public function __construct(SaasLandingService $saasService)
     {
@@ -18,23 +20,24 @@ class SaasLandingController extends Controller
     }
 
 
-    public function index()
+    public function index(): Response
     {
 
-        $plans = Plan::where('is_active', 1)->get();
-        return view('saas.landing', compact('plans'));
+        $plans = $this->saasService->getAvailablePlans();
+
+        return Inertia::render('SaaS/Landing', [
+            'plans' => $plans
+        ]);
     }
 
-    /**
-     * Tiếp nhận dữ liệu Form đăng ký thuê gói SaaS
-     */
+
     public function registerTenant(Request $request)
     {
-        // 1. Kiểm tra tính hợp lệ dữ liệu đầu vào cực kỳ chặt chẽ
+
         $validated = $request->validate([
             'company_name' => 'required|string|min:3|max:255',
             'name'         => 'required|string|min:2|max:255',
-            'company_phone'   => 'required|string|max:20', 
+            'company_phone'   => 'required|string|max:20',
             'company_address' => 'required|string|max:500',
             'email'        => 'required|string|email|max:255|unique:users,email',
             'password'     => 'required|string|min:8|confirmed',
@@ -48,16 +51,15 @@ class SaasLandingController extends Controller
         ]);
 
         try {
-            // 2. Chuyển tiếp mảng dữ liệu an toàn xuống tầng Service để xử lý nghiệp vụ DB
+
             $result = $this->saasService->registerNewTenant($validated);
 
             if ($result['success']) {
 
-                return redirect()->back()->with('success', 'Hệ thống quản lý bãi sân ' . $result['tenant']->name . ' đã được khởi tạo thành công! Hãy đăng nhập hệ thống quản trị.');
+                return redirect()->back()->with('success', "Khởi tạo hệ thống thành công!");
             }
-
         } catch (Exception $e) {
- 
+
             return back()->withErrors(['error' => 'Lỗi khởi tạo hệ thống: ' . $e->getMessage()])->withInput();
         }
     }
