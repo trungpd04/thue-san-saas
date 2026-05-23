@@ -6,14 +6,17 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreBookingRequest;
 use App\Models\FieldType;
 use App\Models\Tenant\Booking;
-use App\Services\PublicFieldService;
+use App\Contracts\Tenant\IBookingService;
+use App\Contracts\Tenant\IFieldQueryService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
 class BookingController extends Controller
 {
-    public function __construct(private readonly PublicFieldService $publicFieldService)
-    {
+    public function __construct(
+        private readonly IFieldQueryService $fieldQueryService,
+        private readonly IBookingService $bookingService
+    ) {
     }
 
     public function index(Request $request)
@@ -29,7 +32,7 @@ class BookingController extends Controller
     {
         $dateStr = $request->query('date', now()->format('Y-m-d'));
         $fieldTypeId = $request->query('field_type_id');
-        $data = $this->publicFieldService->getAvailableSlots(tenant()->id, $dateStr, $fieldTypeId);
+        $data = $this->fieldQueryService->getAvailableSlots(tenant()->id, $dateStr, $fieldTypeId);
 
         return response()->json([
             'date' => $dateStr,
@@ -73,7 +76,7 @@ class BookingController extends Controller
         $validated = $request->validated();
         $validated['payment_type'] = $validated['payment_type'] ?? 'cash';
 
-        $createdBookings = $this->publicFieldService->storeBooking(
+        $createdBookings = $this->bookingService->storeBooking(
             tenant()->id,
             $validated,
             [

@@ -4,7 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\Tenant\Field;
 use App\Http\Requests\StoreBookingRequest;
-use App\Services\PublicFieldService;
+use App\Contracts\Tenant\IBookingService;
+use App\Contracts\Tenant\IFieldQueryService;
 use App\Services\SePayService;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\Request;
@@ -13,14 +14,17 @@ use Inertia\Inertia;
 
 class PublicFieldController extends Controller
 {
-    protected $publicFieldService;
+    protected $fieldQueryService;
+    protected $bookingService;
     protected $sePayService;
 
     public function __construct(
-        PublicFieldService $publicFieldService,
+        IFieldQueryService $fieldQueryService,
+        IBookingService $bookingService,
         SePayService $sePayService,
     ) {
-        $this->publicFieldService = $publicFieldService;
+        $this->fieldQueryService = $fieldQueryService;
+        $this->bookingService = $bookingService;
         $this->sePayService = $sePayService;
     }
 
@@ -31,7 +35,7 @@ class PublicFieldController extends Controller
         $fieldTypeId = $request->query('field_type_id');
         $name = $request->query('name');
 
-        $fields = $this->publicFieldService->getActiveFields($lat, $lng, $fieldTypeId, $name);
+        $fields = $this->fieldQueryService->getActiveFields($lat, $lng, $fieldTypeId, $name);
         $fieldTypes = \App\Models\FieldType::all();
 
         return Inertia::render('Public/Fields', [
@@ -50,7 +54,7 @@ class PublicFieldController extends Controller
     {
         $date = $request->query('date', now()->format('Y-m-d'));
 
-        $bookings = $this->publicFieldService->getBookingsForField($field, $date);
+        $bookings = $this->fieldQueryService->getBookingsForField($field, $date);
 
         return response()->json([
             'date' => $date,
@@ -90,7 +94,7 @@ class PublicFieldController extends Controller
         $dateStr = $request->query('date', now()->format('Y-m-d'));
         $fieldTypeId = $request->query('field_type_id');
 
-        $data = $this->publicFieldService->getAvailableSlots($tenant_id, $dateStr, $fieldTypeId);
+        $data = $this->fieldQueryService->getAvailableSlots($tenant_id, $dateStr, $fieldTypeId);
 
         return response()->json([
             'date' => $dateStr,
@@ -102,7 +106,7 @@ class PublicFieldController extends Controller
     public function storeBooking(StoreBookingRequest $request, $tenant_id)
     {
         try {
-            $createdBookings = $this->publicFieldService->storeBooking($tenant_id, $request->validated());
+            $createdBookings = $this->bookingService->storeBooking($tenant_id, $request->validated());
 
             return response()->json([
                 'message' => 'Slot đã được khóa tạm thời!',
