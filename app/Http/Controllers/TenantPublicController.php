@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Services\tenantlandingpage\TenantPublicService; 
 use Illuminate\Http\Request;
+use Inertia\Inertia;
 
 class TenantPublicController extends Controller
 {
@@ -14,23 +15,18 @@ class TenantPublicController extends Controller
         $this->tenantPublicService = $tenantPublicService;
     }
 
-    public function show($slug)
-    {
-      
-        $data = $this->tenantPublicService->getPublicTenantDetails($slug);
+public function show($slug)
+{
+    $data = $this->tenantPublicService->getPublicTenantDetails($slug);
 
-
-        if (!$data) {
-            abort(404, 'Bãi sân thể thao không tồn tại hoặc đã bị khóa.');
-        }
-
-
-        $tenant = $data['tenant'];
-        $fields = $data['fields'];
-
-
-        return view('tenantLandingPage.public_landing', compact('tenant', 'fields'));
+    if (!$data) {
+        abort(404);
     }
+    return  Inertia::render('TenantLanding/PublicLanding', [
+        'tenant' => $data['tenant'],
+        'fields' => $data['fields']
+    ]);
+}
 
     public function schedule($slug, $field_id)
 {

@@ -46,14 +46,15 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
     require __DIR__ . '/subscription.php';
 });
 
-// Định tuyến hiển thị trang chủ giới thiệu phần mềm SaaS (Hiển thị bảng giá dịch vụ)
+
 Route::get('/', [SaasLandingController::class, 'index'])->name('saas.landing');
 
-// Định tuyến tiếp nhận thông tin khi khách hàng gửi Form đăng ký mở bãi sân mới
 Route::post('/register-tenant', [SaasLandingController::class, 'registerTenant'])->name('saas.register_tenant');
 
 
-// Route hiển thị trang công khai của từng bãi sân dựa vào slug
-Route::get('/san/{slug}', [TenantPublicController::class, 'show'])->name('tenant.public.index');
-// THÊM ROUTE NÀY: Route xử lý khi bấm nút "Xem lịch trống" (Mồi sẵn cho Task 23)
-Route::get('/san/{slug}/dat-lich/{field_id}', [TenantPublicController::class, 'schedule'])->name('tenant.public.schedule');
+Route::get('/{slug}', [TenantPublicController::class, 'show'])
+    ->name('tenant.public.landing');
+
+
+Route::get('/{slug}/fields/{field_id}/schedule', [TenantPublicController::class, 'schedule'])
+    ->name('tenant.public.schedule');
