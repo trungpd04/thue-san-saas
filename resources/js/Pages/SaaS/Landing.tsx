@@ -1,11 +1,10 @@
-import React, { useState } from 'react';
-import { Layout, Button, Typography, Row, Col, Card, Space, Tag, Modal, Form, Input, message } from 'antd';
+import React from 'react';
+import { Layout, Button, Typography, Row, Col, Card, Space, Tag } from 'antd';
 import { 
-    CheckCircleFilled, ArrowRightOutlined, UserOutlined, MailOutlined, 
-    LockOutlined, PhoneOutlined, HomeOutlined, ShopOutlined,
-    CalendarOutlined, ThunderboltOutlined, BarChartOutlined, SafetyCertificateOutlined
+    CheckCircleFilled, ArrowRightOutlined,
+    CalendarOutlined, ThunderboltOutlined, BarChartOutlined
 } from '@ant-design/icons';
-import { Head, useForm } from '@inertiajs/react';
+import { Head } from '@inertiajs/react';
 
 const { Header, Content, Footer } = Layout;
 const { Title, Text, Paragraph } = Typography;
@@ -24,60 +23,8 @@ interface LandingProps {
 }
 
 export default function Landing({ plans }: LandingProps) {
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const [selectedPlan, setSelectedPlan] = useState<PlanItem | null>(null);
-
-    // Inertia Form xử lý dữ liệu đăng ký thuê gói SaaS
-    const { data, setData, post, processing, errors, reset, clearErrors } = useForm({
-        company_name: '',
-        name: '',
-        company_phone: '',
-        company_address: '',
-        email: '',
-        password: '',
-        password_confirmation: '',
-        plan_id: '',
-    });
-
     const formatCurrency = (value: number) => {
         return value === 0 ? "Miễn phí" : new Intl.NumberFormat('vi-VN').format(value) + 'đ';
-    };
-
-    const handleOpenRegisterModal = (plan: PlanItem) => {
-        setSelectedPlan(plan);
-        setData(prev => ({ ...prev, plan_id: String(plan.id) }));
-        setIsModalOpen(true);
-    };
-
-    const handleCloseModal = () => {
-        setIsModalOpen(false);
-        setSelectedPlan(null);
-        clearErrors();
-        reset();
-    };
-
-    const handleSubmitRegister = () => {
-        post('/register-tenant', {
-            // Chạy ngay sau khi Backend lưu DB thành công và trả về redirect()->back()
-            onSuccess: () => {
-                // 1. Ẩn modal form cấu hình trên màn hình
-                setIsModalOpen(false);
-                
-                // 2. Xóa sạch dữ liệu cũ trong form ô nhập liệu
-                reset();
-                
-                // 3. Đưa gói cước đang lựa chọn về trạng thái null ban đầu
-                setSelectedPlan(null);
-                
-                // 4. Báo thông báo xanh bằng Ant Design mượt mà
-                message.success('Khởi tạo không gian hệ thống chuỗi sân bãi thành công!');
-            },
-            // Chạy nếu Validate ở tầng Backend (Controller) trả về lỗi định dạng dữ liệu
-            onError: (backendErrors) => {
-                console.log("Lỗi đăng ký từ hệ thống:", backendErrors);
-                message.error('Khởi tạo thất bại. Vui lòng rà soát lại các trường thông tin đỏ!');
-            }
-        });
     };
 
     return (
@@ -95,7 +42,7 @@ export default function Landing({ plans }: LandingProps) {
                 }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
                         <div style={{ fontWeight: '800', fontSize: '22px', color: '#52c41a', letterSpacing: '0.5px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <span style={{ fontSize: '26px' }}>⚽</span> PITCH-SAAS
+                        
                         </div>
                         
                         <Space size="large">
@@ -103,7 +50,7 @@ export default function Landing({ plans }: LandingProps) {
                             <a href="#pricing" style={{ color: '#555', fontWeight: 500 }}>Bảng giá</a>
                             <div style={{ width: '1px', height: '20px', background: '#d9d9d9', margin: '0 10px' }} />
                             
-                            <Button type="primary" style={{ background: '#52c41a', borderColor: '#52c41a', fontWeight: 600, borderRadius: '6px', boxShadow: '0 2px 8px rgba(82,196,26,0.2)' }} onClick={() => plans.length > 0 && handleOpenRegisterModal(plans[0])}>
+                            <Button type="primary" style={{ background: '#52c41a', borderColor: '#52c41a', fontWeight: 600, borderRadius: '6px', boxShadow: '0 2px 8px rgba(82,196,26,0.2)' }} href="/register">
                                 Đăng ký mở bãi sân
                             </Button>
                         </Space>
@@ -134,7 +81,7 @@ export default function Landing({ plans }: LandingProps) {
                         </Paragraph>
                         
                         <Space size="middle">
-                            <Button type="primary" size="large" icon={<ArrowRightOutlined />} style={{ background: '#52c41a', borderColor: '#52c41a', height: '54px', padding: '0 32px', borderRadius: '8px', fontWeight: 600, fontSize: '16px', boxShadow: '0 4px 14px rgba(82,196,26,0.3)' }} onClick={() => plans.length > 0 && handleOpenRegisterModal(plans[0])}>
+                            <Button type="primary" size="large" icon={<ArrowRightOutlined />} style={{ background: '#52c41a', borderColor: '#52c41a', height: '54px', padding: '0 32px', borderRadius: '8px', fontWeight: 600, fontSize: '16px', boxShadow: '0 4px 14px rgba(82,196,26,0.3)' }} href="/register">
                                 Thử nghiệm miễn phí ngay
                             </Button>
                             <Button size="large" style={{ height: '54px', padding: '0 28px', borderRadius: '8px', fontWeight: 500 }} href="#pricing">
@@ -262,7 +209,7 @@ export default function Landing({ plans }: LandingProps) {
                                                             fontWeight: 600,
                                                             marginTop: 'auto'
                                                         }}
-                                                        onClick={() => handleOpenRegisterModal(plan)}
+                                                        href="/register"
                                                     >
                                                         {plan.price === 0 ? "Bắt đầu dùng thử" : "Đăng ký mua gói này"}
                                                     </Button>
@@ -280,78 +227,6 @@ export default function Landing({ plans }: LandingProps) {
                     </div>
 
                 </Content>
-
-                {/* MODAL FORM ĐĂNG KÝ MUA GÓI VÀ TỰ ĐỘNG MỞ SÂN */}
-                <Modal
-                    title={
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <SafetyCertificateOutlined style={{ color: '#52c41a', fontSize: '24px' }} />
-                            <Title level={4} style={{ margin: 0 }}>Cấu hình không gian mở bãi sân</Title>
-                        </div>
-                    }
-                    open={isModalOpen}
-                    onCancel={handleCloseModal}
-                    footer={[
-                        <Button key="cancel" size="large" onClick={handleCloseModal} style={{ borderRadius: '6px' }}>Hủy bỏ</Button>,
-                        <Button key="submit" type="primary" size="large" style={{ background: '#52c41a', borderColor: '#52c41a', borderRadius: '6px', fontWeight: 600 }} loading={processing} onClick={handleSubmitRegister}>
-                            Xác nhận & Khởi tạo hệ thống
-                        </Button>
-                    ]}
-                    width={680}
-                >
-                    <Paragraph type="secondary" style={{ marginBottom: '24px', fontSize: '14px' }}>
-                        Bạn đang tiến hành đăng ký gói dịch vụ <Text id="selected-plan-text" strong style={{ color: '#52c41a' }}>{selectedPlan?.name}</Text>. Vui lòng điền thông tin doanh nghiệp và thông tin quản trị viên cấp cao. Hệ thống của nhóm bạn sẽ tiến hành kích hoạt lưu trữ an toàn.
-                    </Paragraph>
-
-                    <Form layout="vertical">
-                        <Title level={5} style={{ borderLeft: '4px solid #52c41a', paddingLeft: '8px', marginBottom: '16px', fontSize: '15px' }}>THÔNG TIN CHUỖI SÂN BÃI</Title>
-                        <Row gutter={16}>
-                            <Col span={12}>
-                                <Form.Item label="Tên chuỗi sân / Tổ chức" required validateStatus={errors.company_name ? 'error' : ''} help={errors.company_name}>
-                                    <Input prefix={<ShopOutlined style={{ color: '#bfbfbf' }} />} placeholder="Ví dụ: Sân Bóng Đồng Phát" value={data.company_name} onChange={e => setData('company_name', e.target.value)} style={{ borderRadius: '6px' }} />
-                                </Form.Item>
-                            </Col>
-                            <Col span={12}>
-                                <Form.Item label="Số điện thoại liên hệ" required validateStatus={errors.company_phone ? 'error' : ''} help={errors.company_phone}>
-                                    <Input prefix={<PhoneOutlined style={{ color: '#bfbfbf' }} />} placeholder="Ví dụ: 0987654321" value={data.company_phone} onChange={e => setData('company_phone', e.target.value)} style={{ borderRadius: '6px' }} />
-                                </Form.Item>
-                            </Col>
-                        </Row>
-
-                        <Form.Item label="Địa chỉ cơ sở bãi sân" required validateStatus={errors.company_address ? 'error' : ''} help={errors.company_address}>
-                            <Input prefix={<HomeOutlined style={{ color: '#bfbfbf' }} />} placeholder="Nhập địa chỉ vị trí bãi sân để hiển thị trên hóa đơn..." value={data.company_address} onChange={e => setData('company_address', e.target.value)} style={{ borderRadius: '6px' }} />
-                        </Form.Item>
-
-                        <div style={{ height: '1px', background: '#f0f0f0', margin: '24px 0' }} />
-                        <Title level={5} style={{ borderLeft: '4px solid #1890ff', paddingLeft: '8px', marginBottom: '16px', fontSize: '15px' }}>TÀI KHOẢN CHỦ SÂN (ADMINISTRATOR)</Title>
-
-                        <Row gutter={16}>
-                            <Col span={12}>
-                                <Form.Item label="Họ và tên chủ sở hữu" required validateStatus={errors.name ? 'error' : ''} help={errors.name}>
-                                    <Input prefix={<UserOutlined style={{ color: '#bfbfbf' }} />} placeholder="Nhập tên người đứng đầu" value={data.name} onChange={e => setData('name', e.target.value)} style={{ borderRadius: '6px' }} />
-                                </Form.Item>
-                            </Col>
-                            <Col span={12}>
-                                <Form.Item label="Email đăng trị quản trị" required validateStatus={errors.email ? 'error' : ''} help={errors.email}>
-                                    <Input prefix={<MailOutlined style={{ color: '#bfbfbf' }} />} placeholder="hoang@example.com" value={data.email} onChange={e => setData('email', e.target.value)} style={{ borderRadius: '6px' }} />
-                                </Form.Item>
-                            </Col>
-                        </Row>
-
-                        <Row gutter={16}>
-                            <Col span={12}>
-                                <Form.Item label="Mật khẩu tài khoản" required validateStatus={errors.password ? 'error' : ''} help={errors.password}>
-                                    <Input.Password prefix={<LockOutlined style={{ color: '#bfbfbf' }} />} placeholder="Tối thiểu 8 ký tự" value={data.password} onChange={e => setData('password', e.target.value)} style={{ borderRadius: '6px' }} />
-                                </Form.Item>
-                            </Col>
-                            <Col span={12}>
-                                <Form.Item label="Nhập lại mật khẩu" required validateStatus={errors.password_confirmation ? 'error' : ''} help={errors.password_confirmation}>
-                                    <Input.Password prefix={<LockOutlined style={{ color: '#bfbfbf' }} />} placeholder="Xác nhận mật khẩu" value={data.password_confirmation} onChange={e => setData('password_confirmation', e.target.value)} style={{ borderRadius: '6px' }} />
-                                </Form.Item>
-                            </Col>
-                        </Row>
-                    </Form>
-                </Modal>
 
                 {/* 3. FOOTER */}
                 <Footer style={{ textAlign: 'center', background: '#141414', color: '#8c8c8c', padding: '40px 50px' }}>
