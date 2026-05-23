@@ -2,10 +2,11 @@
 
 namespace App\Services\Tenant;
 
+use App\Contracts\Tenant\IFieldService;
 use App\Models\Tenant\Field;
 use Exception;
 
-class FieldService
+class FieldService implements IFieldService
 {
     /**
      * Tạo sân mới với quy tắc quota nghiêm ngặt và kiểm tra trùng tên
