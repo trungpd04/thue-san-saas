@@ -11,7 +11,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->bind(\App\Contracts\Tenant\IFieldQueryService::class, \App\Services\Tenant\FieldQueryService::class);
+        $this->app->bind(\App\Contracts\Tenant\IBookingService::class, \App\Services\Tenant\BookingService::class);
+        $this->app->bind(\App\Contracts\Tenant\IFieldService::class, \App\Services\Tenant\FieldService::class);
     }
 
     /**
