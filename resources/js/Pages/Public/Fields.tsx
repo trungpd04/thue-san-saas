@@ -29,9 +29,9 @@ export default function Fields({ fields, fieldTypes, filters }: any) {
         }
         const timer = setTimeout(() => {
             handleFilterSubmit();
-        }, 500); 
+        }, 500);
         return () => clearTimeout(timer);
-    }, [searchTerm]); 
+    }, [searchTerm]);
 
     // Remove automatic search on mount to respect user preference for manual interaction
 
@@ -86,7 +86,7 @@ export default function Fields({ fields, fieldTypes, filters }: any) {
         <div className="min-h-screen bg-gray-50 pb-12">
             <Head title="Danh sách sân" />
 
-            <div className="bg-white shadow-sm mb-8" style={{ background: '#fff', padding: '20px 0', borderBottom: '1px solid #f0f0f0' }}>
+            <div className="bg-white shadow-sm mb-8" style={{ background: '#fff', padding: '20px 0' }}>
                 <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 24px' }}>
                     <div style={{ display: 'flex', gap: 12, alignItems: 'center', width: '100%' }}>
                         <Input
@@ -97,16 +97,16 @@ export default function Fields({ fields, fieldTypes, filters }: any) {
                             onChange={e => setSearchTerm(e.target.value)}
                             style={{ borderRadius: 8, height: 48, flex: 1 }}
                         />
-                        <Button 
-                            size="large" 
-                            icon={<ControlOutlined />} 
+                        <Button
+                            size="large"
+                            icon={<ControlOutlined />}
                             onClick={() => setShowFilters(true)}
-                            style={{ 
-                                height: 48, 
-                                borderRadius: 8, 
-                                display: 'flex', 
-                                alignItems: 'center', 
-                                justifyContent: 'center' 
+                            style={{
+                                height: 48,
+                                borderRadius: 8,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center'
                             }}
                         >
                             Bộ lọc
@@ -119,12 +119,12 @@ export default function Fields({ fields, fieldTypes, filters }: any) {
                 title={
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
                         <span style={{ fontSize: 18, fontWeight: 600 }}>Bộ lọc tìm kiếm</span>
-                        <ReloadOutlined 
-                            style={{ color: '#A0D911', cursor: 'pointer' }} 
+                        <ReloadOutlined
+                            style={{ color: '#A0D911', cursor: 'pointer' }}
                             onClick={() => {
                                 setSelectedFieldType(null);
                                 setIsNearMeActive(false);
-                            }} 
+                            }}
                         />
                     </div>
                 }
@@ -139,9 +139,9 @@ export default function Fields({ fields, fieldTypes, filters }: any) {
                         <Tag.CheckableTag
                             checked={selectedFieldType === null}
                             onChange={() => setSelectedFieldType(null)}
-                            style={{ 
-                                padding: '6px 16px', 
-                                borderRadius: 20, 
+                            style={{
+                                padding: '6px 16px',
+                                borderRadius: 20,
                                 border: '1px solid #d9d9d9',
                                 backgroundColor: selectedFieldType === null ? '#fafff0' : '#fff',
                                 color: selectedFieldType === null ? '#000' : 'rgba(0,0,0,0.45)',
@@ -155,9 +155,9 @@ export default function Fields({ fields, fieldTypes, filters }: any) {
                                 key={type.id}
                                 checked={selectedFieldType === type.id}
                                 onChange={() => setSelectedFieldType(type.id)}
-                                style={{ 
-                                    padding: '6px 16px', 
-                                    borderRadius: 20, 
+                                style={{
+                                    padding: '6px 16px',
+                                    borderRadius: 20,
                                     border: selectedFieldType === type.id ? '1px solid #A0D911' : '1px solid #d9d9d9',
                                     backgroundColor: selectedFieldType === type.id ? '#fafff0' : '#fff',
                                     color: selectedFieldType === type.id ? '#000' : 'rgba(0,0,0,0.45)',
@@ -173,27 +173,27 @@ export default function Fields({ fields, fieldTypes, filters }: any) {
 
                     <div style={{ display: 'flex', alignItems: 'center', gap: 12, justifyContent: 'space-between' }}>
                         <Typography.Text strong>Ưu tiên sân gần tôi nhất</Typography.Text>
-                        <Switch 
-                            checked={isNearMeActive} 
-                            onChange={handleNearMeToggle} 
+                        <Switch
+                            checked={isNearMeActive}
+                            onChange={handleNearMeToggle}
                             loading={loadingLocation}
                             style={{ backgroundColor: isNearMeActive ? '#A0D911' : '' }}
                         />
                     </div>
 
                     <div style={{ marginTop: 40 }}>
-                        <Button 
-                            type="primary" 
-                            block 
-                            size="large" 
+                        <Button
+                            type="primary"
+                            block
+                            size="large"
                             onClick={() => {
                                 handleFilterSubmit();
                                 setShowFilters(false);
                             }}
-                            style={{ 
-                                height: 48, 
-                                borderRadius: 8, 
-                                backgroundColor: '#A0D911', 
+                            style={{
+                                height: 48,
+                                borderRadius: 8,
+                                backgroundColor: '#A0D911',
                                 borderColor: '#A0D911',
                                 fontWeight: 600
                             }}
@@ -219,8 +219,10 @@ export default function Fields({ fields, fieldTypes, filters }: any) {
                                 >
                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
                                         <div>
-                                            <Title level={4} style={{ margin: 0, color: '#1a1a1a' }}>{field.tenant?.name}</Title>
-                                            <Tag color="blue" style={{ marginTop: 4 }}>{field.field_type?.name}</Tag>
+                                            <Title level={4} style={{ margin: 0, color: '#1a1a1a', fontWeight: 600 }}>{field.field_type?.name}</Title>
+                                            <Text type="secondary" style={{ display: 'block', marginTop: 4, fontSize: 14 }}>
+                                                {field.tenant?.name}
+                                            </Text>
                                         </div>
                                         {field.distance !== null && (
                                             <div style={{ textAlign: 'right' }}>

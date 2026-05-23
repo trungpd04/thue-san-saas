@@ -6,7 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Tenant\SaveFieldRequest;
 use App\Models\FieldType;
 use App\Models\Tenant\Field;
-use App\Services\Tenant\FieldService;
+use App\Contracts\Tenant\IFieldService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -14,7 +14,7 @@ class FieldController extends Controller
 {
     protected $fieldService;
 
-    public function __construct(FieldService $fieldService)
+    public function __construct(IFieldService $fieldService)
     {
         $this->fieldService = $fieldService;
     }

@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 import { Layout, Menu, Typography, MenuProps, Space } from 'antd';
 import { AppstoreOutlined, CalendarOutlined, CreditCardOutlined, DashboardOutlined, SettingOutlined, UserOutlined } from '@ant-design/icons';
 import { Link, usePage } from '@inertiajs/react';
@@ -81,6 +81,11 @@ export default function TenantSidebar({ collapsed }: TenantSidebarProps) {
             label: 'Cài đặt',
             children: [
                 {
+                    key: `${base}/profile`,
+                    icon: <UserOutlined />,
+                    label: <Link href={`${base}/profile`}>Thông tin trung tâm</Link>,
+                },
+                {
                     key: `${base}/sepay/settings`,
                     icon: <CreditCardOutlined />,
                     label: <Link href={`${base}/sepay/settings`}>Cấu hình nhận tiền</Link>,
@@ -93,7 +98,7 @@ export default function TenantSidebar({ collapsed }: TenantSidebarProps) {
     const defaultOpenKeys = [
         url.startsWith(`${base}/booking`) ? 'booking-group' : null,
         url.startsWith(`${base}/subscription`) ? 'subscription-group' : null,
-        url.startsWith(`${base}/sepay`) ? 'settings-group' : null,
+        url.startsWith(`${base}/sepay`) || url.startsWith(`${base}/profile`) ? 'settings-group' : null,
     ].filter(Boolean) as string[];
 
     return (
