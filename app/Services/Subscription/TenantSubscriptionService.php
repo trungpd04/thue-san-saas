@@ -8,6 +8,7 @@ use App\Models\SubscriptionPayment;
 use App\Services\Subscription\Adapters\MomoAdapter;
 use App\Services\Subscription\Adapters\SepayAdapter;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
 
 class TenantSubscriptionService
@@ -189,5 +190,110 @@ class TenantSubscriptionService
             }
             return false;
         });
+    }
+
+    /**
+     * Xử lý webhook chung (để Controller có thể delegate xuống)
+     *
+     * @param array $payload
+     * @param string $method
+     * @return array
+     */
+    public function handleWebhook(array $payload, string $method = 'sepay'): array
+    {
+        $adapter = match ($method) {
+            'momo' => app(MomoAdapter::class),
+            default => app(SepayAdapter::class),
+        };
+
+        return $this->paymentManager
+            ->setAdapter($adapter)
+            ->handleWebhook($payload);
+    }
+
+    /**
+     * Kích hoạt gói dịch vụ (Domain logic dùng chung cho tất cả các payment adapters)
+     *
+     * @param string $transactionRef
+     * @param float $transferAmount
+     * @return array
+     */
+    public function activateSubscription(string $transactionRef, float $transferAmount): array
+    {
+        // 1. Tìm thanh toán sử dụng withoutGlobalScopes()
+        $payment = SubscriptionPayment::withoutGlobalScopes()
+            ->where('transaction_ref', $transactionRef)
+            ->where('status', 'pending')
+            ->first();
+
+        if (!$payment) {
+            return ['success' => false, 'message' => "Payment with ref {$transactionRef} not found or not pending"];
+        }
+
+        if ($transferAmount < $payment->amount) {
+            Log::error("Subscription: Insufficient amount for Ref: {$transactionRef}. Expected: {$payment->amount}, Got: {$transferAmount}");
+            return ['success' => false, 'message' => 'Insufficient amount'];
+        }
+
+        // Lưu tenant ID ban đầu để khôi phục tránh rò rỉ context
+        $originalTenantId = tenancy()->initialized ? tenant('id') : null;
+
+        try {
+            // Kích hoạt ngữ cảnh tenant
+            tenancy()->initialize($payment->tenant_id);
+
+            DB::transaction(function () use ($payment) {
+                // 1. Cập nhật Payment
+                $payment->update([
+                    'status' => 'success',
+                    'paid_at' => now(),
+                ]);
+
+                // 2. Cập nhật Subscription
+                $subscription = $payment->subscription;
+
+                // Tìm gói cũ đang active
+                $oldActiveSubscription = Subscription::where('tenant_id', $payment->tenant_id)
+                    ->where('id', '!=', $subscription->id)
+                    ->whereIn('status', ['active', 'trial'])
+                    ->first();
+
+                // Kích hoạt gói mới
+                $subscription->update([
+                    'status' => 'active',
+                    'starts_at' => $payment->billing_period_start,
+                    'ends_at' => $payment->billing_period_end,
+                ]);
+
+                if ($oldActiveSubscription) {
+                    $oldActiveSubscription->update([
+                        'status' => 'expired',
+                        'ends_at' => now(),
+                    ]);
+                }
+            });
+
+            Log::info("Subscription: Successfully processed Ref: {$transactionRef}");
+            
+            // Khôi phục tenant context ban đầu
+            if ($originalTenantId) {
+                tenancy()->initialize($originalTenantId);
+            } else {
+                tenancy()->end();
+            }
+
+            return ['success' => true];
+        } catch (\Exception $e) {
+            Log::error("Subscription ERROR: " . $e->getMessage());
+
+            // Luôn đảm bảo phục hồi tenant context
+            if ($originalTenantId) {
+                tenancy()->initialize($originalTenantId);
+            } else {
+                tenancy()->end();
+            }
+
+            return ['success' => false, 'message' => $e->getMessage()];
+        }
     }
 }
