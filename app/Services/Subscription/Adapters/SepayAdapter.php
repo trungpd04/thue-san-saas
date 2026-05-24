@@ -45,59 +45,8 @@ class SepayAdapter implements PaymentAdapter
 
         $transactionRef = $matches[0];
 
-        $payment = SubscriptionPayment::where('transaction_ref', $transactionRef)
-            ->where('status', 'pending')
-            ->first();
-
-        if (!$payment) {
-            return ['success' => false, 'message' => "Payment with ref {$transactionRef} not found or not pending"];
-        }
-
-        // Kích hoạt ngữ cảnh tenant để xử lý dữ liệu trong DB của tenant (nếu cần)
-        tenancy()->initialize($payment->tenant_id);
-
-        if ($transferAmount < $payment->amount) {
-            Log::error("SePay Adapter: Insufficient amount for Ref: {$transactionRef}. Expected: {$payment->amount}, Got: {$transferAmount}");
-            return ['success' => false, 'message' => 'Insufficient amount'];
-        }
-
-        try {
-            DB::transaction(function () use ($payment) {
-                // 1. Cập nhật Payment
-                $payment->update([
-                    'status' => 'success',
-                    'paid_at' => now(),
-                ]);
-
-                // 2. Cập nhật Subscription
-                $subscription = $payment->subscription;
-
-                // Tìm gói cũ đang active
-                $oldActiveSubscription = Subscription::where('tenant_id', $payment->tenant_id)
-                    ->where('id', '!=', $subscription->id)
-                    ->whereIn('status', ['active', 'trial'])
-                    ->first();
-
-                // Kích hoạt gói mới
-                $subscription->update([
-                    'status' => 'active',
-                    'starts_at' => $payment->billing_period_start,
-                    'ends_at' => $payment->billing_period_end,
-                ]);
-
-                if ($oldActiveSubscription) {
-                    $oldActiveSubscription->update([
-                        'status' => 'expired',
-                        'ends_at' => now(),
-                    ]);
-                }
-            });
-
-            Log::info("SePay Adapter: Successfully processed Ref: {$transactionRef}");
-            return ['success' => true];
-        } catch (\Exception $e) {
-            Log::error("SePay Adapter ERROR: " . $e->getMessage());
-            return ['success' => false, 'message' => $e->getMessage()];
-        }
+        // Đóng vai trò là Adapter: Phân tích định dạng dữ liệu đặc thù của SePay
+        // rồi ủy quyền thực thi nghiệp vụ kích hoạt cho TenantSubscriptionService
+        return app(TenantSubscriptionService::class)->activateSubscription($transactionRef, $transferAmount);
     }
 }

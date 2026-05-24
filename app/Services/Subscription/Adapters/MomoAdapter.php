@@ -23,10 +23,21 @@ class MomoAdapter implements PaymentAdapter
 
     public function processWebhook(array $payload): array
     {
-        // Dummy implementation for Momo Webhook
-        return [
-            'success' => true,
-            'message' => 'Momo webhook processed (dummy)'
-        ];
+        // Giả lập phân tích webhook đặc thù của Momo
+        $description = $payload['message'] ?? $payload['orderInfo'] ?? '';
+        $amount = (float) ($payload['amount'] ?? 0);
+
+        if (!preg_match('/MOMO\d+/', $description, $matches)) {
+            return [
+                'success' => false,
+                'message' => 'No matching Momo reference found',
+            ];
+        }
+
+        $transactionRef = $matches[0];
+
+        // Đóng vai trò là Adapter: Phân tích định dạng dữ liệu đặc thù của Momo
+        // rồi ủy quyền thực thi nghiệp vụ kích hoạt cho TenantSubscriptionService
+        return app(TenantSubscriptionService::class)->activateSubscription($transactionRef, $amount);
     }
 }
