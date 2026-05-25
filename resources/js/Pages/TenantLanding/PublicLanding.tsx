@@ -48,11 +48,6 @@ export default function PublicLanding({ tenant, fields }: any) {
                         <Text>Giữ sân nhanh chóng, xác nhận tức thì.</Text>
                     </Col>
                     <Col xs={24} md={6}>
-                        <CheckCircleFilled style={{ fontSize: 32, color: '#00b96b' }} />
-                        <Title level={4}>Sân chuẩn FIFA</Title>
-                        <Text>Cỏ nhân tạo mới nhất, hạn chế chấn thương.</Text>
-                    </Col>
-                    <Col xs={24} md={6}>
                         <StarFilled style={{ fontSize: 32, color: '#00b96b' }} />
                         <Title level={4}>Dịch vụ tận tâm</Title>
                         <Text>Tiện ích đầy đủ: Nước, Locker, Bãi đỗ xe.</Text>
@@ -93,7 +88,7 @@ export default function PublicLanding({ tenant, fields }: any) {
                                         <div className={`price-box ${isSpecial ? 'price-box-special' : ''}`}>
                                             <FieldTimeOutlined /> <strong>{field.price_per_hour ? `Từ: ${Number(field.price_per_hour).toLocaleString()}đ/giờ` : 'Liên hệ'}</strong>
                                         </div>
-                                        <Button type={isSpecial ? "primary" : "default"} block href={`/tenant/${tenant.slug}/schedule/${field.id}`}>
+                                        <Button type={isSpecial ? "primary" : "default"} block href={`/san/tenant/${field.tenant_id}/booking`}>
                                             <CalendarOutlined /> {isSpecial ? 'Đặt sân ngay' : 'Xem lịch & Đặt sân'}
                                         </Button>
                                     </div>
