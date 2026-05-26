@@ -1,112 +1,282 @@
-import React, { useState, useMemo } from 'react';
-import { Layout, Row, Col, Card, Typography, Badge, Button, Select, Tag, Empty, Divider } from 'antd';
-import { FieldTimeOutlined, CalendarOutlined, RocketOutlined, CheckCircleFilled, StarFilled, PhoneOutlined, EnvironmentOutlined, FilterOutlined } from '@ant-design/icons';
+import React, { useState } from 'react';
+import {
+    Layout,
+    Typography,
+    Button,
+    Row,
+    Col,
+    Rate,
+    Empty
+} from 'antd';
+
+import {
+    EnvironmentOutlined,
+    PhoneOutlined,
+    ClockCircleOutlined,
+    HomeOutlined,
+    BellOutlined,
+    UserOutlined
+} from '@ant-design/icons';
+
 import '../../../css/PublicLanding.css';
 
-const { Title, Paragraph, Text } = Typography;
-const { Content, Footer } = Layout;
+const { Title, Text } = Typography;
 
 export default function PublicLanding({ tenant, fields }: any) {
-    const [activeTab, setActiveTab] = useState('all');
 
-    const selectOptions = useMemo(() => {
-        const uniqueTypes = Array.from(new Set(fields.map((f: any) => f.field_type_id)));
-        return [
-            { value: 'all', label: 'Tất cả sân' },
-            ...uniqueTypes.map(id => ({
-                value: String(id),
-                label: fields.find((f: any) => f.field_type_id === id)?.field_type_name || 'Khác'
-            }))
-        ];
-    }, [fields]);
-
-    const filteredFields = useMemo(() => {
-        let list = activeTab === 'all' ? fields : fields.filter((f: any) => String(f.field_type_id) === activeTab);
-        const seen = new Set();
-        return list.filter((f: any) => {
-            if (seen.has(f.id)) return false;
-            seen.add(f.id);
-            return true;
-        });
-    }, [fields, activeTab]);
+    const [activeTab, setActiveTab] = useState('info');
 
     return (
-        <Layout className="lp-layout">
-            <section className="hero-section">
-                <div className="hero-overlay">
-                    <Title level={1} className="hero-title">{tenant.name}</Title>
-                    <Paragraph className="hero-desc">Hệ thống sân bãi hiện đại - Đặt lịch nhanh chóng - Trải nghiệm đẳng cấp.</Paragraph>
-                    <Button type="primary" size="large" href="#facilities" className="btn-book">Khám phá sân ngay</Button>
+        <Layout className="stadium-layout">
+
+            {/* COVER */}
+            <div
+                className="stadium-cover"
+                style={{
+                    backgroundImage:
+                        `url("/images/Badminton-1.jpg")`
+                }}
+            >
+                <div className="cover-overlay"></div>
+            </div>
+
+            {/* HEADER */}
+            <div className="stadium-header">
+
+                <div className="stadium-profile-wrapper">
+
+                    {/* LOGO */}
+                    <div className="stadium-logo">
+                        <img
+                            src="/images/sport2.jpg"
+                            alt="logo"
+                        />
+                    </div>
+
+                    {/* INFO */}
+                    <div className="stadium-info">
+
+                        <Title level={2} className="stadium-name">
+                            {tenant?.name}
+                        </Title>
+
+                        <Rate
+                            disabled
+                            defaultValue={5}
+                            className="stadium-rate"
+                        />
+
+                    </div>
+
                 </div>
-            </section>
 
-            <section className="trust-section">
-                <Row justify="center" gutter={[32, 32]}>
-                    <Col xs={24} md={6}>
-                        <RocketOutlined style={{ fontSize: 32, color: '#00b96b' }} />
-                        <Title level={4}>Đặt lịch 1 chạm</Title>
-                        <Text>Giữ sân nhanh chóng, xác nhận tức thì.</Text>
-                    </Col>
-                    <Col xs={24} md={6}>
-                        <StarFilled style={{ fontSize: 32, color: '#00b96b' }} />
-                        <Title level={4}>Dịch vụ tận tâm</Title>
-                        <Text>Tiện ích đầy đủ: Nước, Locker, Bãi đỗ xe.</Text>
-                    </Col>
-                </Row>
-            </section>
+                {/* BUTTON */}
+                <Button
+                    className="booking-btn"
+                    href={`/tenant/${tenant.slug}`}
+                >
+                    Đặt lịch
+                </Button>
 
-            <Content className="main-content" id="facilities">
-                <Title level={2} style={{ textAlign: 'center', marginBottom: 20 }}>Danh sách sân hiện có</Title>
+            </div>
 
-                <div style={{ textAlign: 'center', marginBottom: 40 }}>
-                    <Select
-                        defaultValue="all"
-                        style={{ width: 280 }}
-                        size="large"
-                        onChange={(value) => setActiveTab(value)}
-                        options={selectOptions}
-                        prefix={<FilterOutlined />}
-                        placeholder="Chọn loại sân"
-                    />
+            {/* TABS */}
+            <div className="custom-tabs">
+
+                <div
+                    className={`tab-item ${activeTab === 'info' ? 'active-tab' : ''}`}
+                    onClick={() => setActiveTab('info')}
+                >
+                    Thông tin & Hình ảnh
                 </div>
-                <Row gutter={[24, 24]} style={{ marginTop: 20 }}>
-                    {filteredFields.length > 0 ? filteredFields.map((field: any) => {
-                        const isSpecial = field.specialEvents && field.specialEvents.length > 0;
-                        return (
-                            <Col key={field.id}>
-                                <Card hoverable className={`field-card ${isSpecial ? 'highlight-card' : ''}`}>
-                                    {isSpecial && <Badge.Ribbon text="Đang có sự kiện" color="volcano" />}
 
-                                    <Title level={4}>{field.name}</Title>
-                                    <Tag color={isSpecial ? "volcano" : "blue"} style={{ marginBottom: 15 }}>{field.field_type_name}</Tag>
+                <div
+                    className={`tab-item ${activeTab === 'service' ? 'active-tab' : ''}`}
+                    onClick={() => setActiveTab('service')}
+                >
+                    Dịch vụ & Đánh giá
+                </div>
 
-                                    <Paragraph type="secondary" className="field-description" style={{ flexGrow: 1 }}>
-                                        {field.description || 'Sân đạt chuẩn thi đấu, không gian thoáng mát.'}
-                                    </Paragraph>
+                <div
+                    className={`tab-item ${activeTab === 'rules' ? 'active-tab' : ''}`}
+                    onClick={() => setActiveTab('rules')}
+                >
+                    Điều khoản & quy định
+                </div>
 
-                                    <div className="card-footer-actions">
-                                        <div className={`price-box ${isSpecial ? 'price-box-special' : ''}`}>
-                                            <FieldTimeOutlined /> <strong>{field.price_per_hour ? `Từ: ${Number(field.price_per_hour).toLocaleString()}đ/giờ` : 'Liên hệ'}</strong>
+            </div>
+
+            {/* CONTENT */}
+            <div className="stadium-content">
+
+                {/* INFO */}
+                {activeTab === 'info' && (
+
+                    <Row gutter={[32, 32]}>
+
+                        <Col xs={24} md={12}>
+
+                            <div className="info-item">
+                                <EnvironmentOutlined />
+                                <Text>
+                                    {tenant?.address || 'Chưa cập nhật địa chỉ'}
+                                </Text>
+                            </div>
+
+                            <div className="info-item">
+                                <ClockCircleOutlined />
+                                <Text>
+                                    Giờ hoạt động: 07:00 - 22:00
+                                </Text>
+                            </div>
+
+                            <div className="info-item">
+                                <PhoneOutlined />
+                                <Text>
+                                    {tenant?.phone || 'Liên hệ'}
+                                </Text>
+                            </div>
+
+                            <div className="info-item">
+                                <PhoneOutlined />
+                                <Text>
+                                    Hotline hỗ trợ đặt sân
+                                </Text>
+                            </div>
+
+                        </Col>
+
+                        <Col xs={24} md={12}>
+
+                            <div className="empty-image-box">
+                                Chưa có hình ảnh nào!
+                            </div>
+
+                        </Col>
+
+                    </Row>
+
+                )}
+
+                {/* SERVICE */}
+                {activeTab === 'service' && (
+
+                    <div className="service-wrapper">
+
+                        {/* LEFT */}
+                        <div className="price-section">
+
+                            <Title level={4} className="price-title">
+                                BẢNG GIÁ SÂN
+                            </Title>
+
+                            {fields && fields.length > 0 ? (
+                                fields.map((field: any) => {
+
+                                    const prices = field.field_prices || [];
+
+                                    return (
+                                        <div
+                                            key={field.id}
+                                            className="price-table-wrapper"
+                                        >
+
+                                            <div className="table-header">
+                                                {field.name}
+                                            </div>
+
+                                            <table className="price-table">
+
+                                                <thead>
+                                                    <tr>
+                                                        <th>Thứ</th>
+                                                        <th>Khung giờ</th>
+                                                        <th>Giá</th>
+                                                    </tr>
+                                                </thead>
+
+                                                <tbody>
+
+                                                    {prices.length > 0 ? (
+                                                        prices.map((price: any, index: number) => {
+
+                                                            const dayText =
+                                                                price.day_type === 'weekday'
+                                                                    ? 'T2 - T6'
+                                                                    : price.day_type === 'weekend'
+                                                                        ? 'T7 - CN'
+                                                                        : 'Mặc định';
+
+                                                            return (
+                                                                <tr key={index}>
+
+                                                                    <td>
+                                                                        {dayText}
+                                                                    </td>
+
+                                                                    <td>
+                                                                        {price.start_time?.slice(0, 5)}
+                                                                        {' - '}
+                                                                        {price.end_time?.slice(0, 5)}
+                                                                    </td>
+
+                                                                    <td>
+                                                                        {Number(price.price_per_hour).toLocaleString()} đ
+                                                                    </td>
+
+                                                                </tr>
+                                                            );
+                                                        })
+                                                    ) : (
+                                                        <tr>
+                                                            <td colSpan={3}>
+                                                                Chưa có bảng giá
+                                                            </td>
+                                                        </tr>
+                                                    )}
+
+                                                </tbody>
+
+                                            </table>
+
                                         </div>
-                                        <Button type={isSpecial ? "primary" : "default"} block href={`/san/tenant/${field.tenant_id}/booking`}>
-                                            <CalendarOutlined /> {isSpecial ? 'Đặt sân ngay' : 'Xem lịch & Đặt sân'}
-                                        </Button>
-                                    </div>
-                                </Card>
-                            </Col>
-                        );
-                    }) : <Empty description="Chưa có sân nào trong loại này" style={{ margin: '40px auto' }} />}
-                </Row>
-            </Content>
+                                    );
+                                })
+                            ) : (
+                                <Empty description="Chưa có sân nào" />
+                            )}
 
-            <Footer className="lp-footer">
-                <div style={{ maxWidth: 800, margin: 'auto' }}>
-                    <p><PhoneOutlined /> Hotline: {tenant.phone || 'Đang cập nhật'}</p>
-                    <p><EnvironmentOutlined /> Địa chỉ: {tenant.address || 'Đang cập nhật'}</p>
-                    <Divider style={{ borderColor: '#333' }} />
-                    <Text style={{ color: '#888' }}>{tenant.name} © 2026. Phát triển bởi hệ thống đặt sân chuyên nghiệp.</Text>
-                </div>
-            </Footer>
+                        </div>
+
+                        {/* RIGHT */}
+                        <div className="review-section">
+
+                            <div className="review-empty">
+                                Hiện tại chưa có lượt đánh giá nào.
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                )}
+
+                {/* RULES */}
+                {activeTab === 'rules' && (
+
+                    <div className="rules-box">
+
+                        <Text>
+                            Sân này chưa cập nhật điều khoản.
+                        </Text>
+
+                    </div>
+
+                )}
+
+            </div>
+
+
         </Layout>
     );
 }
