@@ -6,6 +6,7 @@ use App\Contracts\Tenant\IFieldQueryService;
 use App\Models\Tenant\Field;
 use App\Models\Tenant\Booking;
 use App\Models\Tenant\FieldPrice;
+use App\Models\Tenant\FieldSpecialEvent;
 use Illuminate\Support\Carbon;
 
 class FieldQueryService implements IFieldQueryService
@@ -101,6 +102,11 @@ class FieldQueryService implements IFieldQueryService
             ->where('day_type', $dayType)
             ->get();
 
+        // Lấy tất cả sự kiện đặc biệt trong ngày hiện tại của Tenant
+        $specialEvents = FieldSpecialEvent::where('tenant_id', $tenantId)
+            ->where('event_date', $dateStr)
+            ->get();
+
         $result = [];
 
         foreach ($fields as $field) {
@@ -130,7 +136,7 @@ class FieldQueryService implements IFieldQueryService
                     $startSlotDisplay = $slotGen['display_start'];
                     $endSlotDisplay = $slotGen['display_end'];
 
-                    // Check availability and status
+                    // 1. Kiểm tra trạng thái khả dụng và các đặt sân hiện tại
                     $slotStatus = 'available'; // available, booked, pending_payment
                     foreach ($fieldBookings as $booking) {
                         if ($booking->start_time < $endSlot && $booking->end_time > $startSlot) {
@@ -139,7 +145,19 @@ class FieldQueryService implements IFieldQueryService
                         }
                     }
 
-                    // Get price
+                    // 2. Kiểm tra xem có bị chặn bởi sự kiện Khóa sân nào không
+                    $isBlocked = $specialEvents->contains(function ($event) use ($field, $startSlot, $endSlot) {
+                        return ($event->field_id === null || $event->field_id == $field->id)
+                            && $event->effect === FieldSpecialEvent::EFFECT_BLOCK
+                            && $event->start_time < $endSlot
+                            && $event->end_time > $startSlot;
+                    });
+
+                    if ($isBlocked) {
+                        $slotStatus = 'blocked';
+                    }
+
+                    // 3. Tính toán giá gốc
                     $slotPrice = 0;
                     foreach ($prices as $price) {
                         if ($price->start_time <= $startSlot && $price->end_time >= $endSlot) {
@@ -148,12 +166,27 @@ class FieldQueryService implements IFieldQueryService
                         }
                     }
 
+                    // 4. Áp dụng sự kiện Tăng giá nếu có
+                    $surgeEvent = $specialEvents->first(function ($event) use ($field, $startSlot, $endSlot) {
+                        return ($event->field_id === null || $event->field_id == $field->id)
+                            && $event->effect === FieldSpecialEvent::EFFECT_SURGE
+                            && $event->start_time < $endSlot
+                            && $event->end_time > $startSlot;
+                    });
+
+                    if ($surgeEvent) {
+                        $surgePercent = $surgeEvent->surge_percent ?? 0;
+                        $slotPrice = $slotPrice * (1 + $surgePercent / 100);
+                    }
+
                     $slots[] = [
                         'start_time' => $startSlotDisplay,
                         'end_time' => $endSlotDisplay,
                         'price_per_hour' => $slotPrice,
                         'status' => $slotStatus,
                         'is_available' => $slotStatus === 'available',
+                        'is_surge' => $surgeEvent !== null,
+                        'surge_title' => $surgeEvent ? $surgeEvent->title : null,
                     ];
                 }
             }

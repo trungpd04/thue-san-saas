@@ -8,9 +8,12 @@ class PricingManager
 {
     protected array $strategies = [];
 
-    public function __construct(StandardPricingStrategy $standardStrategy)
-    {
-        // Mặc định luôn có chiến lược tính giá chuẩn
+    public function __construct(
+        HolidayPricingStrategy $holidayStrategy,
+        StandardPricingStrategy $standardStrategy
+    ) {
+        // Đăng ký Holiday trước để hệ thống luôn check ngày lễ trước tiên
+        $this->addStrategy($holidayStrategy);
         $this->addStrategy($standardStrategy);
     }
 

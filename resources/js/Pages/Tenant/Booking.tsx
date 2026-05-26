@@ -297,13 +297,22 @@ export default function Booking({ fieldType }: { fieldType?: any }) {
                                                 const isSelected = selectedSlots.some(s => s.field_id === field.id && s.start_time === slot.start_time);
                                                 const isBooked = slot.status === 'booked';
                                                 const isPending = slot.status === 'pending_payment';
+                                                const isBlocked = slot.status === 'blocked';
+                                                const isSurge = slot.is_surge;
                                                 const isUnavailable = !slot.is_available;
                                                 const isHighlighted = isHistoryHighlighted(field.id, slot);
-                                                const bgColor = isSelected ? '#bae0ff' : isBooked ? '#ff4d4f' : isPending ? '#faad14' : 'transparent';
+
+                                                let bgColor = 'transparent';
+                                                if (isSelected) bgColor = '#bae0ff';
+                                                else if (isBooked) bgColor = '#ff4d4f';
+                                                else if (isPending) bgColor = '#faad14';
+                                                else if (isBlocked) bgColor = '#d9d9d9';
+                                                else if (isSurge) bgColor = '#efdbff';
 
                                                 return (
                                                     <div
                                                         key={idx}
+                                                        title={isSurge ? `Sự kiện: ${slot.surge_title || 'Tăng giá'}` : (isBlocked ? 'Sân bị khóa' : undefined)}
                                                         style={{
                                                             flex: 1,
                                                             borderRight: '1px solid #ccc',
@@ -325,6 +334,16 @@ export default function Booking({ fieldType }: { fieldType?: any }) {
                                                                 }]);
                                                             }
                                                         }}
+                                                        onMouseEnter={(e) => {
+                                                            if (!isUnavailable && !isSelected) {
+                                                                e.currentTarget.style.background = isSurge ? '#d3adf7' : '#e6f7ff';
+                                                            }
+                                                        }}
+                                                        onMouseLeave={(e) => {
+                                                            if (!isUnavailable && !isSelected) {
+                                                                e.currentTarget.style.background = bgColor;
+                                                            }
+                                                        }}
                                                     />
                                                 );
                                             })}
@@ -341,6 +360,8 @@ export default function Booking({ fieldType }: { fieldType?: any }) {
                             <Text type="secondary"><span style={{ display: 'inline-block', width: 14, height: 14, background: '#bae0ff', marginRight: 6, verticalAlign: -2 }} />Đang chọn</Text>
                             <Text type="secondary"><span style={{ display: 'inline-block', width: 14, height: 14, background: '#faad14', marginRight: 6, verticalAlign: -2 }} />Đang thao tác</Text>
                             <Text type="secondary"><span style={{ display: 'inline-block', width: 14, height: 14, background: '#ff4d4f', marginRight: 6, verticalAlign: -2 }} />Đã đặt</Text>
+                            <Text type="secondary"><span style={{ display: 'inline-block', width: 14, height: 14, background: '#d9d9d9', marginRight: 6, verticalAlign: -2 }} />Khóa sân</Text>
+                            <Text type="secondary"><span style={{ display: 'inline-block', width: 14, height: 14, background: '#efdbff', marginRight: 6, verticalAlign: -2 }} />Sự kiện</Text>
                         </Space>
 
                         <Space size={16}>
