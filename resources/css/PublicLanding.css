@@ -1,6 +1,6 @@
 .stadium-layout {
     min-height: 100vh;
-    background: #006c2f;
+    background: #7CB305;
     overflow-x: hidden;
 }
 
@@ -22,7 +22,7 @@
 /* HEADER */
 
 .stadium-header {
-    background: #007a33;
+    background: #7CB305;
     padding: 0 30px 24px;
     position: relative;
     display: flex;
@@ -101,7 +101,7 @@
 
 
 .custom-tabs {
-    background: #007a33;
+    background: #7CB305;
     display: flex;
     justify-content: space-around;
     align-items: center;
@@ -132,7 +132,7 @@
 
 .stadium-content {
     padding: 30px;
-    background: #006c2f;
+    background: #7CB305;
     min-height: 500px;
 }
 
