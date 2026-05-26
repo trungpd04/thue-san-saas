@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Tenant;
 use App\Http\Controllers\Controller;
 use App\Models\FieldType;
 use App\Models\Tenant\Field;
+use App\Models\Tenant\FieldSpecialEvent;
 use App\Services\Tenant\FieldPriceService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -24,6 +25,7 @@ class FieldPriceController extends Controller
             'fieldTypes' => FieldType::all(),
             'fields' => Field::all(),
             'prices' => $this->fieldPriceService->getAllPricesGroupedByType(),
+            'specialEvents' => FieldSpecialEvent::with('field')->orderBy('event_date', 'desc')->get(),
         ]);
     }
 
@@ -73,5 +75,57 @@ class FieldPriceController extends Controller
         } catch (\Exception $e) {
             return back()->withErrors(['error' => $e->getMessage()]);
         }
+    }
+
+    public function storeSpecialEvent(Request $request)
+    {
+        $validated = $request->validate([
+            'field_id' => 'nullable|exists:fields,id',
+            'event_date' => 'required|date',
+            'start_time' => 'required',
+            'end_time' => 'required',
+            'effect' => 'required|in:surge,block',
+            'surge_percent' => 'nullable|required_if:effect,surge|integer|min:0|max:500',
+            'title' => 'required|string|max:255',
+            'note' => 'nullable|string',
+        ]);
+
+        $validated['start_time'] = date('H:i:s', strtotime($validated['start_time']));
+        $validated['end_time'] = date('H:i:s', strtotime($validated['end_time']));
+
+        FieldSpecialEvent::create($validated);
+
+        return back()->with('success', 'Thêm sự kiện mới thành công!');
+    }
+
+    public function updateSpecialEvent(Request $request, $id)
+    {
+        $specialEvent = FieldSpecialEvent::findOrFail($id);
+
+        $validated = $request->validate([
+            'field_id' => 'nullable|exists:fields,id',
+            'event_date' => 'required|date',
+            'start_time' => 'required',
+            'end_time' => 'required',
+            'effect' => 'required|in:surge,block',
+            'surge_percent' => 'nullable|required_if:effect,surge|integer|min:0|max:500',
+            'title' => 'required|string|max:255',
+            'note' => 'nullable|string',
+        ]);
+
+        $validated['start_time'] = date('H:i:s', strtotime($validated['start_time']));
+        $validated['end_time'] = date('H:i:s', strtotime($validated['end_time']));
+
+        $specialEvent->update($validated);
+
+        return back()->with('success', 'Cập nhật sự kiện thành công!');
+    }
+
+    public function destroySpecialEvent($id)
+    {
+        $specialEvent = FieldSpecialEvent::findOrFail($id);
+        $specialEvent->delete();
+
+        return back()->with('success', 'Xóa sự kiện thành công!');
     }
 }

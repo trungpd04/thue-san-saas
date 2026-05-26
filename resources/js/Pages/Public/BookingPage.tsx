@@ -219,16 +219,21 @@ export default function BookingPage({ tenant, fieldType }: any) {
                                                         const isSelected = selectedSlots.some(s => s.field_id === field.id && s.start_time === slot.start_time);
                                                         const isBooked = slot.status === 'booked';
                                                         const isPending = slot.status === 'pending_payment';
+                                                        const isBlocked = slot.status === 'blocked';
+                                                        const isSurge = slot.is_surge;
                                                         const isUnavailable = !slot.is_available;
 
                                                         let bgColor = 'transparent';
                                                         if (isSelected) bgColor = '#bae0ff';
                                                         else if (isBooked) bgColor = '#ff4d4f';
                                                         else if (isPending) bgColor = '#faad14';
+                                                        else if (isBlocked) bgColor = '#d9d9d9';
+                                                        else if (isSurge) bgColor = '#efdbff';
 
                                                         return (
                                                             <div
                                                                 key={idx}
+                                                                title={isSurge ? `Sự kiện: ${slot.surge_title || 'Tăng giá'}` : (isBlocked ? 'Sân bị khóa' : undefined)}
                                                                 style={{
                                                                     flex: 1,
                                                                     borderRight: '1px solid #ccc',
@@ -258,12 +263,12 @@ export default function BookingPage({ tenant, fieldType }: any) {
                                                                 }}
                                                                 onMouseEnter={(e) => {
                                                                     if (!isUnavailable && !isSelected) {
-                                                                        e.currentTarget.style.background = '#e6f7ff';
+                                                                        e.currentTarget.style.background = isSurge ? '#d3adf7' : '#e6f7ff';
                                                                     }
                                                                 }}
                                                                 onMouseLeave={(e) => {
                                                                     if (!isUnavailable && !isSelected) {
-                                                                        e.currentTarget.style.background = 'transparent';
+                                                                        e.currentTarget.style.background = bgColor;
                                                                     }
                                                                 }}
                                                             >
@@ -280,7 +285,7 @@ export default function BookingPage({ tenant, fieldType }: any) {
                     </Spin>
 
                     <div style={{ marginTop: 24, display: 'flex', flexWrap: 'wrap', gap: 16, justifyContent: 'space-between', alignItems: 'center' }}>
-                        <div style={{ display: 'flex', gap: 16, fontSize: 12 }}>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16, fontSize: 12 }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                                 <div style={{ width: 16, height: 16, background: '#fff', border: '1px solid #f0f0f0', borderRadius: 4 }}></div>
                                 <Text type="secondary">Còn trống</Text>
@@ -296,6 +301,14 @@ export default function BookingPage({ tenant, fieldType }: any) {
                             <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                                 <div style={{ width: 16, height: 16, background: '#ff4d4f', borderRadius: 4 }}></div>
                                 <Text type="secondary">Đã được đặt</Text>
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                                <div style={{ width: 16, height: 16, background: '#d9d9d9', borderRadius: 4 }}></div>
+                                <Text type="secondary">Khóa sân</Text>
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                                <div style={{ width: 16, height: 16, background: '#efdbff', borderRadius: 4 }}></div>
+                                <Text type="secondary">Sự kiện tăng giá</Text>
                             </div>
                         </div>
 

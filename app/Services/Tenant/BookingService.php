@@ -7,6 +7,7 @@ use App\Models\Tenant\Field;
 use App\Models\Tenant\Booking;
 use App\Models\Tenant\Customer;
 use App\Models\Tenant\Payment;
+use App\Models\Tenant\FieldSpecialEvent;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Carbon;
 
@@ -71,6 +72,7 @@ class BookingService implements IBookingService
             $startSlot = $slot['start_time'] . ':00';
             $endSlot = $slot['end_time'] . ':00';
             
+            // 1. Kiểm tra xem có bị trùng lặp với các đơn đặt sân hiện tại không
             $overlapping = Booking::where('field_id', $slot['field_id'])
                 ->whereDate('booking_date', $dateStr)
                 ->whereIn('status', ['locked_pending', 'pending', 'confirmed', 'paid'])
@@ -80,6 +82,21 @@ class BookingService implements IBookingService
 
             if ($overlapping) {
                 throw new \Exception('Sân hiện đang có người thao tác, vui lòng chọn slot khác hoặc quay lại sau.');
+            }
+
+            // 2. Kiểm tra xem có bị chặn bởi sự kiện Khóa sân nào không
+            $isBlocked = FieldSpecialEvent::where('event_date', $dateStr)
+                ->where('effect', FieldSpecialEvent::EFFECT_BLOCK)
+                ->where(function ($query) use ($slot) {
+                    $query->where('field_id', $slot['field_id'])
+                        ->orWhereNull('field_id');
+                })
+                ->where('start_time', '<', $endSlot)
+                ->where('end_time', '>', $startSlot)
+                ->exists();
+
+            if ($isBlocked) {
+                throw new \Exception('Sân hiện đã bị khóa do sự kiện đặc biệt tại khung giờ này.');
             }
         }
     }
@@ -92,6 +109,29 @@ class BookingService implements IBookingService
         
         $isCash = $paymentType === 'cash';
 
+        // Tìm sự kiện tăng giá giao cắt để tính toán và lưu trữ phụ thu
+        $event = FieldSpecialEvent::where('event_date', $date)
+            ->where('effect', FieldSpecialEvent::EFFECT_SURGE)
+            ->where(function ($query) use ($field_id) {
+                $query->where('field_id', $field_id)
+                    ->orWhereNull('field_id');
+            })
+            ->where('start_time', '<', $endTime)
+            ->where('end_time', '>', $startTime)
+            ->first();
+
+        $eventSurchargeAmount = 0.0;
+        $basePrice = $totalPrice;
+        $eventId = null;
+
+        if ($event) {
+            $eventId = $event->id;
+            $surgePercent = $event->surge_percent ?? 0;
+            // base_price * (1 + surge_percent / 100) = total_price -> base_price = total_price / (1 + surge_percent / 100)
+            $basePrice = $totalPrice / (1 + $surgePercent / 100);
+            $eventSurchargeAmount = $totalPrice - $basePrice;
+        }
+
         $booking = Booking::create([
             'tenant_id' => $tenant_id,
             'field_id' => $field_id,
@@ -99,8 +139,10 @@ class BookingService implements IBookingService
             'booking_date' => $date,
             'start_time' => $startTime,
             'end_time' => $endTime,
-            'base_price' => $totalPrice,
+            'base_price' => $basePrice,
+            'event_surcharge_amount' => $eventSurchargeAmount,
             'total_price' => $totalPrice,
+            'field_special_event_id' => $eventId,
             'pricing_breakdown' => collect($slots)->map(function ($s) { return (array)$s; })->toArray(),
             'status' => $isCash ? 'paid' : 'locked_pending',
             'locked_at' => $lockedAt ?: now(),

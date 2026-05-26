@@ -42,6 +42,9 @@ Route::middleware([InitializeTenancyBySlug::class])
             Route::get('/dashboard', fn() => Inertia::render('Tenant/TenantDashboard'))->name('tenant.dashboard');
             Route::resource('fields', FieldController::class)->names('tenant.fields');
             Route::resource('field-prices', FieldPriceController::class)->names('tenant.field-prices');
+            Route::post('field-prices/special-events', [FieldPriceController::class, 'storeSpecialEvent'])->name('tenant.field-prices.special-events.store');
+            Route::put('field-prices/special-events/{id}', [FieldPriceController::class, 'updateSpecialEvent'])->name('tenant.field-prices.special-events.update');
+            Route::delete('field-prices/special-events/{id}', [FieldPriceController::class, 'destroySpecialEvent'])->name('tenant.field-prices.special-events.destroy');
             Route::get('/booking', [BookingController::class, 'index'])->name('tenant.booking.index');
             Route::get('/booking/available-slots', [BookingController::class, 'availableSlots'])->name('tenant.booking.available-slots');
             Route::get('/booking/history', [BookingController::class, 'history'])->name('tenant.booking.history');
