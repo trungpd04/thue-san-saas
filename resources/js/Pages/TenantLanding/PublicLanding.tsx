@@ -73,7 +73,7 @@ export default function PublicLanding({ tenant, fields }: any) {
                 {/* BUTTON */}
                 <Button
                     className="booking-btn"
-                    href={`/tenant/${tenant.slug}`}
+                    href={`/san/tenant/${tenant.id}/booking`}
                 >
                     Đặt lịch
                 </Button>
