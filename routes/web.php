@@ -10,6 +10,7 @@ use App\Http\Controllers\PublicFieldController;
 use Illuminate\Support\Facades\Route;
 
 use App\Http\Controllers\SaasLandingController;
+use App\Http\Controllers\TenantPublicController;
 
 Route::redirect('/', '/admin/dashboard');
 Route::redirect('/admin', '/admin/dashboard');
@@ -46,8 +47,15 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
     require __DIR__ . '/subscription.php';
 });
 
-// Định tuyến hiển thị trang chủ giới thiệu phần mềm SaaS (Hiển thị bảng giá dịch vụ)
+
 Route::get('/', [SaasLandingController::class, 'index'])->name('saas.landing');
 
-// Định tuyến tiếp nhận thông tin khi khách hàng gửi Form đăng ký mở bãi sân mới
 Route::post('/register-tenant', [SaasLandingController::class, 'registerTenant'])->name('saas.register_tenant');
+
+
+Route::get('/{slug}', [TenantPublicController::class, 'show'])
+    ->name('tenant.public.landing');
+
+
+Route::get('/{slug}/fields/{field_id}/schedule', [TenantPublicController::class, 'schedule'])
+    ->name('tenant.public.schedule');
