@@ -67,20 +67,19 @@ export default function BookingPage({ tenant, fieldType }: any) {
 
         setSubmitting(true);
         try {
-            await axios.post(`/san/tenant/${tenant.id}/public-book`, {
+            const response = await axios.post(`/san/tenant/${tenant.id}/public-book`, {
                 date: selectedDate,
                 customer_name: customerName,
                 customer_phone: customerPhone,
                 note: notes,
+                payment_type: 'banking',
                 total_price: totalPrice,
                 pricing_breakdown: selectedSlots
             });
-            message.success('Đặt sân thành công!');
-            setCustomerName('');
-            setCustomerPhone('');
-            setNotes('');
-            setSelectedSlots([]);
-            fetchTenantBookings(tenant.id, selectedDate);
+            message.success('Slot đã được khóa tạm thời! Vui lòng thanh toán.');
+
+            // Redirect to checkout
+            router.get(`/san/checkout`, { booking_ids: response.data.booking_ids });
         } catch (error: any) {
             message.error(error.response?.data?.message || 'Có lỗi xảy ra khi đặt sân.');
             fetchTenantBookings(tenant.id, selectedDate);
@@ -218,7 +217,14 @@ export default function BookingPage({ tenant, fieldType }: any) {
                                                 <div style={{ flex: 1, position: 'relative', display: 'flex' }}>
                                                     {field.slots?.map((slot: any, idx: number) => {
                                                         const isSelected = selectedSlots.some(s => s.field_id === field.id && s.start_time === slot.start_time);
-                                                        const isBooked = !slot.is_available;
+                                                        const isBooked = slot.status === 'booked';
+                                                        const isPending = slot.status === 'pending_payment';
+                                                        const isUnavailable = !slot.is_available;
+
+                                                        let bgColor = 'transparent';
+                                                        if (isSelected) bgColor = '#bae0ff';
+                                                        else if (isBooked) bgColor = '#ff4d4f';
+                                                        else if (isPending) bgColor = '#faad14';
 
                                                         return (
                                                             <div
@@ -226,18 +232,18 @@ export default function BookingPage({ tenant, fieldType }: any) {
                                                                 style={{
                                                                     flex: 1,
                                                                     borderRight: '1px solid #ccc',
-                                                                    background: isSelected ? '#bae0ff' : (isBooked ? '#ff4d4f' : 'transparent'),
-                                                                    cursor: isBooked ? 'not-allowed' : 'pointer',
+                                                                    background: bgColor,
+                                                                    cursor: isUnavailable ? 'not-allowed' : 'pointer',
                                                                     transition: 'background 0.3s',
                                                                     display: 'flex',
                                                                     alignItems: 'center',
                                                                     justifyContent: 'center',
-                                                                    color: isBooked ? '#fff' : (isSelected ? '#000' : '#888'),
+                                                                    color: isUnavailable ? '#fff' : (isSelected ? '#000' : '#888'),
                                                                     fontSize: 10,
                                                                     fontWeight: isSelected ? 'bold' : 'normal'
                                                                 }}
                                                                 onClick={() => {
-                                                                    if (!isBooked) {
+                                                                    if (!isUnavailable) {
                                                                         if (isSelected) {
                                                                             setSelectedSlots(prev => prev.filter(s => !(s.field_id === field.id && s.start_time === slot.start_time)));
                                                                         } else {
@@ -251,12 +257,12 @@ export default function BookingPage({ tenant, fieldType }: any) {
                                                                     }
                                                                 }}
                                                                 onMouseEnter={(e) => {
-                                                                    if (!isBooked && !isSelected) {
+                                                                    if (!isUnavailable && !isSelected) {
                                                                         e.currentTarget.style.background = '#e6f7ff';
                                                                     }
                                                                 }}
                                                                 onMouseLeave={(e) => {
-                                                                    if (!isBooked && !isSelected) {
+                                                                    if (!isUnavailable && !isSelected) {
                                                                         e.currentTarget.style.background = 'transparent';
                                                                     }
                                                                 }}
@@ -282,6 +288,10 @@ export default function BookingPage({ tenant, fieldType }: any) {
                             <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                                 <div style={{ width: 16, height: 16, background: '#bae0ff', border: '1px solid #91d5ff', borderRadius: 4 }}></div>
                                 <Text type="secondary">Đang chọn</Text>
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                                <div style={{ width: 16, height: 16, background: '#faad14', borderRadius: 4 }}></div>
+                                <Text type="secondary">Đang thao tác</Text>
                             </div>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                                 <div style={{ width: 16, height: 16, background: '#ff4d4f', borderRadius: 4 }}></div>

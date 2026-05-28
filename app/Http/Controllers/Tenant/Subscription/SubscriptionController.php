@@ -44,12 +44,16 @@ class SubscriptionController extends Controller
             ->latest()
             ->first();
 
+        // Kiểm tra xem tenant đã từng đăng ký gói nào chưa (kể cả hết hạn)
+        $hasSubscriptionHistory = Subscription::where('tenant_id', $tenant->id)->exists();
+
         return Inertia::render('Tenant/Subscription/Register', [
             'plans' => $plans,
             'activeSubscription' => $activeSubscription,
             'pendingSubscription' => $pendingSubscription,
             // Giữ lại currentSubscription cho các thành phần cũ nếu cần (ưu tiên pending)
-            'currentSubscription' => $pendingSubscription ?? $activeSubscription
+            'currentSubscription' => $pendingSubscription ?? $activeSubscription,
+            'hasSubscriptionHistory' => $hasSubscriptionHistory,
         ]);
     }
 
@@ -77,15 +81,21 @@ class SubscriptionController extends Controller
         $request->validate([
             'plan_id' => 'required|exists:plans,id',
             'months' => 'required|integer|min:1|max:36',
+            'method' => 'sometimes|string|in:sepay,momo',
         ]);
 
-        $result = $this->subscriptionService->register(
-            tenant(),
-            $request->plan_id,
-            $request->months
-        );
+        try {
+            $result = $this->subscriptionService->register(
+                tenant(),
+                $request->plan_id,
+                $request->months,
+                $request->input('method', 'sepay')
+            );
 
-        return response()->json($result);
+            return response()->json($result);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 400);
+        }
     }
 
     /**
@@ -108,8 +118,13 @@ class SubscriptionController extends Controller
         $transactionRef = $request->query('ref');
         $payment = SubscriptionPayment::where('transaction_ref', $transactionRef)->first();
 
+        // if (!$payment) {
+        //     return redirect()->route('tenant.subscription.index')->with('error', 'Thông tin thanh toán không tồn tại hoặc đã hết hạn');
+        // }
+        // Sửa tại hàm sepayPayment hoặc bất kỳ chỗ nào có redirect
         if (!$payment) {
-            return redirect()->route('tenant.subscription.index')->with('error', 'Thông tin thanh toán không tồn tại hoặc đã hết hạn');
+            return redirect()->route('tenant.subscription.index', ['tenant' => tenant('slug')])
+                ->with('error', 'Thông tin thanh toán không tồn tại hoặc đã hết hạn');
         }
 
         return Inertia::render('Tenant/Subscription/SepayPayment', [

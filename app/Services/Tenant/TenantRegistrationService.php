@@ -42,9 +42,10 @@ class TenantRegistrationService
             Subscription::create([
                 'tenant_id' => $tenant->id,
                 'plan_id' => 1,
-                'status' => 'active',
+                'status' => 'trial',
                 'trial_ends_at' => now()->addDays(30),
                 'starts_at' => now(),
+                'ends_at' => now()->addDays(30),
             ]);
 
             Tenancy::initialize($tenant);

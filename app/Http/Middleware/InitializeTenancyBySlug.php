@@ -21,7 +21,6 @@ class InitializeTenancyBySlug
 
         $tenant = Tenant::query()
             ->where('slug', strtolower($slug))
-            ->where('is_active', true)
             ->first();
 
         if (! $tenant) {
@@ -30,6 +29,16 @@ class InitializeTenancyBySlug
 
         $route?->forgetParameter('tenant');
         Tenancy::initialize($tenant);
+
+        if (! $tenant->is_active && ! $request->is("tenant/{$tenant->slug}/login")) {
+            auth('tenant')->logout();
+
+            return redirect()
+                ->route('tenant.login', ['tenant' => $tenant->slug])
+                ->withErrors([
+                    'email' => 'Chủ sân đã bị khóa. Vui lòng liên hệ admin để được hỗ trợ.',
+                ]);
+        }
 
         return $next($request);
     }

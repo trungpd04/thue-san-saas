@@ -1,6 +1,6 @@
 import React from 'react';
 import { Layout, Menu, Typography, MenuProps } from 'antd';
-import { DashboardOutlined, UserOutlined, TeamOutlined, TagsOutlined} from '@ant-design/icons';
+import { DashboardOutlined, CreditCardOutlined, TeamOutlined, TagsOutlined} from '@ant-design/icons';
 import { Link, usePage } from '@inertiajs/react';
 
 const { Sider } = Layout;
@@ -22,6 +22,11 @@ const menuItems: MenuItem[] = [
         key: '/admin/plans',
         icon: <TagsOutlined />,
         label: <Link href="/admin/plans">Quản lí gói dịch vụ</Link>,
+    },
+    {
+        key: '/admin/payment-history',
+        icon: <CreditCardOutlined />,
+        label: <Link href="/admin/payment-history">Lịch sử thanh toán</Link>,
     }
 ];
 

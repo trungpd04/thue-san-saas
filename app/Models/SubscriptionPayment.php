@@ -37,4 +37,9 @@ class SubscriptionPayment extends Model
     {
         return $this->belongsTo(Subscription::class);
     }
+
+    public function tenant(): BelongsTo
+    {
+        return $this->belongsTo(Tenant::class);
+    }
 }

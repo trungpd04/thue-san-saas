@@ -1,0 +1,314 @@
+.stadium-layout {
+    min-height: 100vh;
+    background: #7CB305;
+    overflow-x: hidden;
+}
+
+/* COVER */
+
+.stadium-cover {
+    height: 320px;
+    background-size: cover;
+    background-position: center;
+    position: relative;
+}
+
+.cover-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.2);
+}
+
+/* HEADER */
+
+.stadium-header {
+    background: #7CB305;
+    padding: 0 30px 24px;
+    position: relative;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+}
+
+.stadium-profile-wrapper {
+    display: flex;
+    align-items: flex-end;
+    gap: 22px;
+    margin-top: -70px;
+    position: relative;
+    z-index: 10;
+}
+
+
+.stadium-logo {
+    width: 130px;
+    height: 130px;
+    border-radius: 50%;
+    overflow: hidden;
+    background: white;
+    border: 6px solid white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow:
+        0 10px 30px rgba(0,0,0,0.25),
+        0 0 0 6px rgba(255,255,255,0.15);
+}
+
+.stadium-logo img {
+    width: 70%;
+    height: 70%;
+    object-fit: contain;
+}
+
+/* INFO */
+
+.stadium-info {
+    /* padding-bottom: 16px; */
+    margin: -10px;
+}
+
+.stadium-name {
+    color: white !important;
+    margin-bottom: 6px !important;
+    font-weight: 800 !important;
+    font-size: 30px !important;
+    line-height: 1 !important;
+}
+
+.stadium-rate {
+    color: #ffc53d !important;
+    font-size: 16px;
+}
+
+/* BUTTON */
+
+.booking-btn {
+    background: #f5b400 !important;
+    border: none !important;
+    color: white !important;
+    font-weight: 700;
+    height: 46px;
+    padding: 0 30px;
+    border-radius: 12px;    
+    /* margin-bottom: 14px; */
+    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+}
+
+.booking-btn:hover {
+    opacity: 0.95;
+}
+
+
+.custom-tabs {
+    background: #7CB305;
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    border-top: 1px solid rgba(255,255,255,0.08);
+}
+
+.tab-item {
+    width: 100%;
+    text-align: center;
+    padding: 22px 10px;
+    color: rgba(255,255,255,0.7);
+    font-size: 18px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: 0.3s;
+    border-bottom: 4px solid transparent;
+}
+
+.tab-item:hover {
+    color: white;
+}
+
+.active-tab {
+    color: white;
+    border-bottom: 4px solid #d9f7be;
+}
+
+
+.stadium-content {
+    padding: 30px;
+    background: #7CB305;
+    min-height: 500px;
+}
+
+
+.info-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 18px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+
+.info-item .anticon {
+    font-size: 18px;
+    color: white;
+}
+
+.info-item .ant-typography {
+    color: white;
+    font-size: 16px;
+}
+
+.empty-image-box {
+    min-height: 220px;
+    border: 1px dashed rgba(255,255,255,0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: rgba(255,255,255,0.7);
+    border-radius: 12px;
+}
+
+
+.service-wrapper {
+    display: grid;
+    grid-template-columns: 1.2fr 1fr;
+    gap: 40px;
+    margin-top: 10px;
+}
+
+.price-title {
+    color: white !important;
+    margin-bottom: 20px !important;
+    font-weight: 600 !important;
+    font-size: 22px !important;
+}
+
+.price-table-wrapper {
+    margin-bottom: 30px;
+}
+
+.table-header {
+    background: white;
+    color: #006c2f;
+    text-align: center;
+    font-size: 24px;
+    font-weight: bold;
+    padding: 14px;
+    border: 1px solid #dcdcdc;
+}
+
+.price-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+}
+
+.price-table th {
+    background: #f5f5f5;
+    color: #006c2f;
+    font-size: 18px;
+    padding: 16px;
+    border: 1px solid #dcdcdc;
+}
+
+.price-table td {
+    text-align: center;
+    padding: 18px;
+    border: 1px solid #dcdcdc;
+    font-size: 16px;
+    color: #333;
+}
+
+.review-section {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.review-empty {
+    color: rgba(255,255,255,0.85);
+    font-size: 22px;
+    font-weight: 500;
+}
+
+
+.rules-box {
+    background: white;
+    min-height: 360px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.rules-box .ant-typography {
+    color: #777;
+    font-size: 18px;
+}
+
+
+
+@media (max-width: 992px) {
+
+    .service-wrapper {
+        grid-template-columns: 1fr;
+    }
+
+    .review-section {
+        min-height: 200px;
+    }
+
+    .table-header {
+        font-size: 18px;
+    }
+
+    .price-table th,
+    .price-table td {
+        font-size: 14px;
+        padding: 12px;
+    }
+}
+
+@media (max-width: 768px) {
+
+    .stadium-cover {
+        height: 240px;
+    }
+
+    .stadium-header {
+        padding: 0 18px 20px;
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 18px;
+    }
+
+    .stadium-profile-wrapper {
+        margin-top: -55px;
+        gap: 16px;
+    }
+
+    .stadium-logo {
+        width: 90px;
+        height: 90px;
+        border-width: 4px;
+    }
+
+    .stadium-name {
+        font-size: 28px !important;
+    }
+
+    .booking-btn {
+        width: 100%;
+        margin-bottom: 0;
+    }
+
+    .tab-item {
+        font-size: 14px;
+        padding: 16px 8px;
+    }
+
+    .stadium-content {
+        padding: 18px;
+    }
+
+    .price-title {
+        font-size: 28px !important;
+    }
+}

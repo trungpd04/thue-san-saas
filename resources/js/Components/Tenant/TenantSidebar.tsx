@@ -1,6 +1,6 @@
 import React from 'react';
 import { Layout, Menu, Typography, MenuProps, Space } from 'antd';
-import { CalendarOutlined, CreditCardOutlined, DashboardOutlined, UserOutlined } from '@ant-design/icons';
+import { AppstoreOutlined, CalendarOutlined, CreditCardOutlined, DashboardOutlined, SettingOutlined, UserOutlined } from '@ant-design/icons';
 import { Link, usePage } from '@inertiajs/react';
 
 const { Sider } = Layout;
@@ -16,6 +16,7 @@ export default function TenantSidebar({ collapsed }: TenantSidebarProps) {
     const { tenancy } = props;
     const slug = tenancy?.tenant?.slug;
     const base = slug ? `/tenant/${slug}` : '/tenant';
+    const bookingFieldTypes = props.tenantBookingFieldTypes || [];
 
     const menuItems: MenuItem[] = [
         {
@@ -29,9 +30,29 @@ export default function TenantSidebar({ collapsed }: TenantSidebarProps) {
             label: <Link href={`${base}/customer`}>Khách hàng</Link>,
         },
         {
-            key: `${base}/booking`,
+            key: `${base}/fields`,
+            icon: <AppstoreOutlined />,
+            label: <Link href={`${base}/fields`}>Quản lý sân</Link>,
+        },
+        {
+            key: `${base}/field-prices`,
+            icon: <CreditCardOutlined />,
+            label: <Link href={`${base}/field-prices`}>Cấu hình giá</Link>,
+        },
+        {
+            key: 'booking-group',
             icon: <CalendarOutlined />,
-            label: <Link href={`${base}/booking`}>Đặt sân</Link>,
+            label: 'Quản lý đặt sân',
+            children: [
+                {
+                    key: `${base}/booking`,
+                    label: <Link href={`${base}/booking`}>Tất cả môn thể thao</Link>,
+                },
+                ...bookingFieldTypes.map((fieldType: any) => ({
+                    key: `${base}/booking?field_type_id=${fieldType.id}`,
+                    label: <Link href={`${base}/booking?field_type_id=${fieldType.id}`}>{fieldType.name}</Link>,
+                })),
+            ],
         },
         {
             key: 'subscription-group',
@@ -51,12 +72,34 @@ export default function TenantSidebar({ collapsed }: TenantSidebarProps) {
                     key: `${base}/subscription/status`,
                     icon: <CreditCardOutlined />,
                     label: <Link href={`${base}/subscription/status`}>Lịch sử thanh toán</Link>,
+                },
+            ]
+        },
+        {
+            key: 'settings-group',
+            icon: <SettingOutlined />,
+            label: 'Cài đặt',
+            children: [
+                {
+                    key: `${base}/profile`,
+                    icon: <UserOutlined />,
+                    label: <Link href={`${base}/profile`}>Thông tin trung tâm</Link>,
+                },
+                {
+                    key: `${base}/sepay/settings`,
+                    icon: <CreditCardOutlined />,
+                    label: <Link href={`${base}/sepay/settings`}>Cấu hình nhận tiền</Link>,
                 }
             ]
         },
     ];
 
-    const activeKey = url; // Simplified for now
+    const activeKey = url;
+    const defaultOpenKeys = [
+        url.startsWith(`${base}/booking`) ? 'booking-group' : null,
+        url.startsWith(`${base}/subscription`) ? 'subscription-group' : null,
+        url.startsWith(`${base}/sepay`) || url.startsWith(`${base}/profile`) ? 'settings-group' : null,
+    ].filter(Boolean) as string[];
 
     return (
         <Sider
@@ -114,6 +157,7 @@ export default function TenantSidebar({ collapsed }: TenantSidebarProps) {
                 theme="dark"
                 mode="inline"
                 selectedKeys={[activeKey]}
+                defaultOpenKeys={defaultOpenKeys}
                 items={menuItems}
                 style={{ marginTop: 8, border: 'none' }}
             />
