@@ -3,11 +3,17 @@
 use App\Http\Controllers\Admin\AuthenticatedSessionController;
 use App\Http\Controllers\Tenant\Auth\RegisteredTenantController;
 use App\Http\Controllers\Admin\PlanController;
+use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\PaymentHistoryController;
+use App\Http\Controllers\Admin\TenantController;
 use App\Http\Controllers\PublicFieldController;
 use Illuminate\Support\Facades\Route;
-use Inertia\Inertia;
+
+use App\Http\Controllers\SaasLandingController;
+use App\Http\Controllers\TenantPublicController;
 
 Route::redirect('/', '/admin/dashboard');
+Route::redirect('/admin', '/admin/dashboard');
 
 Route::get('/san', [PublicFieldController::class, 'index'])->name('public.fields.index');
 Route::get('/san/{field}/bookings', [PublicFieldController::class, 'bookings'])->name('public.fields.bookings');
@@ -15,6 +21,8 @@ Route::get('/san/{field}/bookings', [PublicFieldController::class, 'bookings'])-
 Route::get('/san/tenant/{tenant_id}/available-slots', [PublicFieldController::class, 'availableSlots'])->name('public.fields.availableSlots');
 Route::get('/san/tenant/{tenant_id}/booking', [PublicFieldController::class, 'showBookingPage'])->name('public.fields.bookingPage');
 Route::post('/san/tenant/{tenant_id}/public-book', [PublicFieldController::class, 'storeBooking'])->name('public.fields.storeBooking');
+Route::get('/san/checkout', [PublicFieldController::class, 'checkout'])->name('public.fields.checkout');
+Route::get('/san/booking-status', [PublicFieldController::class, 'checkPaymentStatus'])->name('public.fields.checkStatus');
 Route::middleware('guest')->group(function () {
     Route::get('/admin/login', [AuthenticatedSessionController::class, 'create'])->name('admin.login');
     Route::post('/admin/login', [AuthenticatedSessionController::class, 'store'])
@@ -29,14 +37,25 @@ Route::post('/admin/logout', [AuthenticatedSessionController::class, 'destroy'])
     ->name('admin.logout');
 
 Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
-    Route::get('/dashboard', function () {
-        return Inertia::render('AdminDashboard');
-    })->name('admin.dashboard');
+   Route::get('/dashboard', [DashboardController::class, 'index'])->name('admin.dashboard');
 
-    Route::get('/tenant', function () {
-        return Inertia::render('Tenant');
-    })->name('admin.tenant');
+    Route::get('/tenant-management', [TenantController::class, 'index'])->name('admin.tenants.index');
+    Route::patch('/tenant-management/{tenant}/status', [TenantController::class, 'updateStatus'])->name('admin.tenants.status');
+    Route::get('/payment-history', [PaymentHistoryController::class, 'index'])->name('admin.payment-history.index');
     Route::resource('plans', PlanController::class)->except(['create', 'show', 'edit']);
 
     require __DIR__ . '/subscription.php';
 });
+
+
+Route::get('/', [SaasLandingController::class, 'index'])->name('saas.landing');
+
+Route::post('/register-tenant', [SaasLandingController::class, 'registerTenant'])->name('saas.register_tenant');
+
+
+Route::get('/{slug}', [TenantPublicController::class, 'show'])
+    ->name('tenant.public.landing');
+
+
+Route::get('/{slug}/fields/{field_id}/schedule', [TenantPublicController::class, 'schedule'])
+    ->name('tenant.public.schedule');

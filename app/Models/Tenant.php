@@ -11,6 +11,7 @@ class Tenant extends BaseTenant
 {
     use HasScopedValidationRules;
 
+
     public static function getCustomColumns(): array
     {
         return [
@@ -19,6 +20,8 @@ class Tenant extends BaseTenant
             'slug',
             'phone',
             'address',
+            'latitude',
+            'longitude',
             'is_active',
         ];
     }
@@ -35,7 +38,7 @@ class Tenant extends BaseTenant
         return $this->hasOne(User::class);
     }
 
-    public function subscriptions(): HasMany
+    public function subscriptions(): HasMany 
     {
         return $this->hasMany(Subscription::class);
     }
@@ -48,5 +51,9 @@ class Tenant extends BaseTenant
     public function subscriptionPayments(): HasMany
     {
         return $this->hasMany(SubscriptionPayment::class);
+    }
+    public function fields(): HasMany
+    {
+        return $this->hasMany(\App\Models\Tenant\Field::class);
     }
 }

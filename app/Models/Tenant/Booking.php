@@ -24,6 +24,7 @@ class Booking extends Model
         'total_price',
         'pricing_breakdown',
         'status',
+        'locked_at',
         'note',
         'booked_by',
         'field_special_event_id',
@@ -37,6 +38,7 @@ class Booking extends Model
             'event_surcharge_amount' => 'decimal:2',
             'total_price' => 'decimal:2',
             'pricing_breakdown' => 'array',
+            'locked_at' => 'datetime',
         ];
     }
 

@@ -26,6 +26,7 @@ import TenantLayout from "@/Layout/Tenant/TenantLayout";
 import axios from "axios";
 import { App } from "antd";
 import { formatVND } from "@/utils/currency";
+import { formatDate } from '@/utils/date';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -43,6 +44,10 @@ type RegisterPageProps = {
             slug?: string;
         } | null;
     };
+    flash?: {
+        error?: string;
+        success?: string;
+    };
 };
 
 export default function Register({
@@ -50,13 +55,15 @@ export default function Register({
     activeSubscription,
     pendingSubscription,
     currentSubscription, // Vẫn nhận để tương thích ngược nếu cần
+    hasSubscriptionHistory = false,
 }: {
     plans: Plan[];
     activeSubscription: any;
     pendingSubscription: any;
     currentSubscription: any;
+    hasSubscriptionHistory?: boolean;
 }) {
-    const { tenancy } = usePage<RegisterPageProps>().props;
+    const { tenancy, flash } = usePage<RegisterPageProps>().props;
     const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null);
     const [months, setMonths] = useState(1);
     const [loading, setLoading] = useState(false);
@@ -165,6 +172,15 @@ export default function Register({
     // };
     const { message } = App.useApp();
 
+    useEffect(() => {
+        if (flash?.error) {
+            message.error(flash.error);
+        }
+        if (flash?.success) {
+            message.success(flash.success);
+        }
+    }, [flash]);
+
     const handleCreateRequest = async (plan: Plan) => {
         setSelectedPlan(plan);
         setLoading(true);
@@ -178,11 +194,23 @@ export default function Register({
             );
             if (response.data.success) {
                 // Chuyển hướng sang trang thanh toán SePay
+                // window.location.href = `${tenantBasePath}/subscription/sepay-payment?ref=${response.data.transaction_ref}`;
+                 // Trường hợp 1: Nếu là gói miễn phí (sau khi khấu trừ tiền âm/bằng 0)
+                if (response.data.is_free) {
+                    message.success(response.data.message || "Gói dịch vụ đã được kích hoạt!");
+                    // Chuyển hướng về Dashboard (Lưu ý phải truyền slug tenant vào route)
+                    // Nếu dùng window.location.href:
+                    window.location.href = `/tenant/${tenancy?.tenant?.slug}/subscription/status`;
+                    return;
+                }
+
+                // Trường hợp 2: Nếu cần thanh toán (số tiền > 0)
+                // Chuyển hướng sang trang thanh toán SePay
                 window.location.href = `${tenantBasePath}/subscription/sepay-payment?ref=${response.data.transaction_ref}`;
             }
-        } catch (err) {
+        } catch (err: any) {
             console.error(err);
-            message.error("Có lỗi xảy ra, vui lòng thử lại sau");
+            message.error(err.response?.data?.message || "Có lỗi xảy ra, vui lòng thử lại sau");
         } finally {
             setLoading(false);
         }
@@ -191,6 +219,25 @@ export default function Register({
     return (
         <div style={{ padding: "24px", maxWidth: 1200, margin: "0 auto" }}>
             <Head title="Đăng ký gói dịch vụ" />
+
+            {flash?.error && (
+                <Alert
+                    message="Thông báo"
+                    description={flash.error}
+                    type="error"
+                    showIcon
+                    style={{ marginBottom: 24 }}
+                />
+            )}
+            {flash?.success && (
+                <Alert
+                    message="Thành công"
+                    description={flash.success}
+                    type="success"
+                    showIcon
+                    style={{ marginBottom: 24 }}
+                />
+            )}
 
             {/* Phần hiển thị Gói hiện tại - Giống index Admin */}
             {displaySubscriptions.length > 0 && (
@@ -313,6 +360,7 @@ export default function Register({
                                         Thời gian (tháng):
                                     </Text>
                                     <InputNumber
+                                        readOnly={price === 0}
                                         min={1}
                                         max={36}
                                         value={months}
@@ -322,6 +370,7 @@ export default function Register({
                                 </div>
 
                                 <Button
+                                    disabled={isActive || (price === 0 && hasSubscriptionHistory)}
                                     type="primary"
                                     block
                                     size="large"
@@ -334,7 +383,7 @@ export default function Register({
                                         fontWeight: "bold",
                                     }}
                                 >
-                                    Đăng ký ngay
+                                    {isActive ? "Đang dùng" : (price === 0 && hasSubscriptionHistory ? "Chỉ dành cho tài khoản mới" : "Đăng ký ngay")}
                                 </Button>
                             </Card>
                         </Col>

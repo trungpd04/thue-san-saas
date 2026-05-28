@@ -3,21 +3,21 @@
 namespace App\Http\Controllers\Webhook\SePay;
 
 use App\Http\Controllers\Controller;
-use App\Services\Webhook\SePayWebhookService;
+use App\Services\Subscription\TenantSubscriptionService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
 class SePayWebhookController extends Controller
 {
-    protected $sePayWebhookService;
+    protected $subscriptionService;
 
-    public function __construct(SePayWebhookService $sePayWebhookService)
+    public function __construct(TenantSubscriptionService $subscriptionService)
     {
-        $this->sePayWebhookService = $sePayWebhookService;
+        $this->subscriptionService = $subscriptionService;
     }
 
     /**
-     * Tiếp nhận webhook từ SePay (gọi Service)
+     * Tiếp nhận webhook từ SePay
      */
     public function handle(Request $request)
     {
@@ -28,18 +28,19 @@ class SePayWebhookController extends Controller
         $headerKey = $request->header('x-api-key');
         $authHeader = $request->header('Authorization');
 
-        // Nếu có Authorization header (dạng "Apikey ..." hoặc "Bearer ...")
         if ($authHeader && preg_match('/(?:Apikey|Bearer)\s+(.*)$/i', $authHeader, $matches)) {
             $headerKey = $matches[1];
         }
 
         if ($headerKey !== $webhookToken) {
-            Log::warning('SePay Webhook: Unauthorized access attempt. Received: ' . ($headerKey ?? 'none'));
+            Log::warning('SePay Webhook: Unauthorized access attempt.');
             return response()->json(['error' => 'Unauthorized'], 401);
         }
 
         try {
-            $result = $this->sePayWebhookService->handle($request->all());
+            // Sử dụng TenantSubscriptionService để xử lý webhook (Chuẩn UML mới)
+            $result = $this->subscriptionService->handleWebhook($request->all(), 'sepay');
+
             return response()->json($result);
         } catch (\Exception $e) {
             Log::error("SePay Webhook Controller Error: " . $e->getMessage());
