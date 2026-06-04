@@ -41,18 +41,27 @@ class BookingController extends Controller
         ]);
     }
 
-    public function history(Request $request)
+    public function historyPage(Request $request)
     {
-        $dateStr = $request->query('date', now()->format('Y-m-d'));
+        return Inertia::render('Tenant/BookingHistory');
+    }
+
+    public function historyData(Request $request)
+    {
+        $dateStr = $request->query('date');
         $type = $request->query('type');
         $fieldTypeId = $request->query('field_type_id');
+        $search = $request->query('search');
+        $status = $request->query('status');
 
         $bookings = Booking::query()
             ->with(['field:id,name', 'customer:id,name,phone', 'payments' => function ($query) {
                 $query->select('id', 'booking_id', 'amount', 'payment_method', 'type', 'status', 'paid_at')
                     ->latest();
             }])
-            ->whereDate('booking_date', $dateStr)
+            ->when($dateStr, function ($query) use ($dateStr) {
+                $query->whereDate('booking_date', $dateStr);
+            })
             ->when($fieldTypeId, function ($query) use ($fieldTypeId) {
                 $query->whereHas('field', function ($fieldQuery) use ($fieldTypeId) {
                     $fieldQuery->where('field_type_id', $fieldTypeId);
@@ -61,6 +70,15 @@ class BookingController extends Controller
             ->when(in_array($type, ['cash', 'banking'], true), function ($query) use ($type) {
                 $query->whereHas('payments', function ($paymentQuery) use ($type) {
                     $paymentQuery->where('type', $type);
+                });
+            })
+            ->when($status, function ($query) use ($status) {
+                $query->where('status', $status);
+            })
+            ->when($search, function ($query) use ($search) {
+                $query->whereHas('customer', function ($customerQuery) use ($search) {
+                    $customerQuery->where('name', 'like', "%{$search}%")
+                        ->orWhere('phone', 'like', "%{$search}%");
                 });
             })
             ->latest('created_at')
