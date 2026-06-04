@@ -111,6 +111,23 @@ export default function Fields({ fields, fieldTypes, filters }: any) {
                         >
                             Bộ lọc
                         </Button>
+                        <Link href="/san/huong-dan-huy">
+                            <Button
+                                size="large"
+                                type="default"
+                                danger
+                                style={{
+                                    height: 48,
+                                    borderRadius: 8,
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    fontWeight: 500
+                                }}
+                            >
+                                Hủy lịch đặt
+                            </Button>
+                        </Link>
                     </div>
                 </div>
             </div>

@@ -44,7 +44,8 @@ Route::middleware([InitializeTenancyBySlug::class])
             Route::resource('field-prices', FieldPriceController::class)->names('tenant.field-prices');
             Route::get('/booking', [BookingController::class, 'index'])->name('tenant.booking.index');
             Route::get('/booking/available-slots', [BookingController::class, 'availableSlots'])->name('tenant.booking.available-slots');
-            Route::get('/booking/history', [BookingController::class, 'history'])->name('tenant.booking.history');
+            Route::get('/booking/history', [BookingController::class, 'historyPage'])->name('tenant.booking.history');
+            Route::get('/booking/history/data', [BookingController::class, 'historyData'])->name('tenant.booking.history-data');
             Route::post('/booking', [BookingController::class, 'store'])->name('tenant.booking.store');
             Route::delete('/booking/{booking}', [BookingController::class, 'destroy'])->name('tenant.booking.destroy');
 
