@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Head, router, usePage } from '@inertiajs/react';
-import { Button, Card, Col, Input, message, Popconfirm, Radio, Row, Space, Spin, Table, Tag, Typography } from 'antd';
-import { CalendarOutlined, CreditCardOutlined, UserOutlined } from '@ant-design/icons';
+import { Button, Card, Col, Input, message, Radio, Row, Space, Spin, Typography, Select } from 'antd';
+import { CalendarOutlined, CreditCardOutlined, UserOutlined, AppstoreOutlined } from '@ant-design/icons';
 import axios from 'axios';
 import dayjs from 'dayjs';
 import AppDatePicker from '@/Components/Common/AppDatePicker';
@@ -13,38 +13,28 @@ export default function Booking({ fieldType }: { fieldType?: any }) {
     const { props } = usePage<any>();
     const slug = props.tenancy?.tenant?.slug;
     const base = slug ? `/tenant/${slug}` : '/tenant';
-    const selectedFieldTypeId = fieldType?.id;
 
+    const [activeFieldTypeId, setActiveFieldTypeId] = useState<number | undefined>(fieldType?.id);
     const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
     const [tenantFields, setTenantFields] = useState<any[]>([]);
     const [loadingSlots, setLoadingSlots] = useState(false);
     const [selectedSlots, setSelectedSlots] = useState<any[]>([]);
     const [customerName, setCustomerName] = useState('');
     const [customerPhone, setCustomerPhone] = useState('');
-    const [notes, setNotes] = useState('');
     const [paymentType, setPaymentType] = useState<'cash' | 'banking'>('cash');
-    const [historyType, setHistoryType] = useState<'all' | 'cash' | 'banking'>('all');
-    const [bookingHistory, setBookingHistory] = useState<any[]>([]);
-    const [loadingHistory, setLoadingHistory] = useState(false);
-    const [selectedHistoryBooking, setSelectedHistoryBooking] = useState<any>(null);
     const [submitting, setSubmitting] = useState(false);
 
     useEffect(() => {
         fetchTenantBookings(selectedDate);
         setSelectedSlots([]);
-        setSelectedHistoryBooking(null);
-    }, [selectedDate, selectedFieldTypeId]);
-
-    useEffect(() => {
-        fetchBookingHistory();
-    }, [selectedDate, historyType, selectedFieldTypeId]);
+    }, [selectedDate, activeFieldTypeId]);
 
     const fetchTenantBookings = async (date: string) => {
         setLoadingSlots(true);
         try {
             const params: any = { date };
-            if (selectedFieldTypeId) {
-                params.field_type_id = selectedFieldTypeId;
+            if (activeFieldTypeId) {
+                params.field_type_id = activeFieldTypeId;
             }
             const response = await axios.get(`${base}/booking/available-slots`, { params });
             setTenantFields(response.data.fields || []);
@@ -55,30 +45,10 @@ export default function Booking({ fieldType }: { fieldType?: any }) {
         }
     };
 
-    const fetchBookingHistory = async () => {
-        setLoadingHistory(true);
-        try {
-            const params: any = { date: selectedDate };
-            if (historyType !== 'all') {
-                params.type = historyType;
-            }
-            if (selectedFieldTypeId) {
-                params.field_type_id = selectedFieldTypeId;
-            }
-            const response = await axios.get(`${base}/booking/history`, { params });
-            setBookingHistory(response.data.bookings || []);
-        } catch (error) {
-            message.error('Không thể lấy lịch sử đặt sân.');
-        } finally {
-            setLoadingHistory(false);
-        }
-    };
-
     const onDateChange = (date: dayjs.Dayjs | null) => {
         if (date) {
             setSelectedDate(date.format('YYYY-MM-DD'));
             setSelectedSlots([]);
-            setSelectedHistoryBooking(null);
         }
     };
 
@@ -106,7 +76,7 @@ export default function Booking({ fieldType }: { fieldType?: any }) {
                 date: selectedDate,
                 customer_name: customerName,
                 customer_phone: customerPhone,
-                note: notes,
+                note: '',
                 payment_type: paymentType,
                 total_price: totalPrice,
                 pricing_breakdown: selectedSlots,
@@ -121,184 +91,195 @@ export default function Booking({ fieldType }: { fieldType?: any }) {
             setSelectedSlots([]);
             setCustomerName('');
             setCustomerPhone('');
-            setNotes('');
             fetchTenantBookings(selectedDate);
-            fetchBookingHistory();
         } catch (error: any) {
             message.error(error.response?.data?.message || 'Có lỗi xảy ra khi đặt sân.');
             fetchTenantBookings(selectedDate);
-            fetchBookingHistory();
         } finally {
             setSubmitting(false);
         }
     };
 
-    const handleCancelBooking = async (booking: any) => {
-        try {
-            await axios.delete(`${base}/booking/${booking.id}`);
-            message.success('Đã hủy booking.');
-            if (selectedHistoryBooking?.id === booking.id) {
-                setSelectedHistoryBooking(null);
-            }
-            fetchTenantBookings(selectedDate);
-            fetchBookingHistory();
-        } catch (error: any) {
-            message.error(error.response?.data?.message || 'Không thể hủy booking.');
-        }
-    };
-
-    const isHistoryHighlighted = (fieldId: number, slot: any) => {
-        if (!selectedHistoryBooking || selectedHistoryBooking.field_id !== fieldId) {
-            return false;
-        }
-
-        const bookingStart = selectedHistoryBooking.start_time?.slice(0, 5);
-        const bookingEnd = selectedHistoryBooking.end_time?.slice(0, 5);
-
-        return slot.start_time >= bookingStart && slot.end_time <= bookingEnd;
-    };
-
-    const historyColumns = [
-        {
-            title: 'Sân',
-            dataIndex: ['field', 'name'],
-            key: 'field',
-        },
-        {
-            title: 'Khách hàng',
-            key: 'customer',
-            render: (_: any, record: any) => (
-                <Space direction="vertical" size={0}>
-                    <Text>{record.customer?.name}</Text>
-                    <Text type="secondary" style={{ fontSize: 12 }}>{record.customer?.phone}</Text>
-                </Space>
-            ),
-        },
-        {
-            title: 'Khung giờ',
-            key: 'time',
-            render: (_: any, record: any) => `${record.start_time?.slice(0, 5)} - ${record.end_time?.slice(0, 5)}`,
-        },
-        {
-            title: 'Thanh toán',
-            key: 'payment',
-            render: (_: any, record: any) => {
-                const payment = record.payments?.[0];
-                const type = payment?.type || 'banking';
-                return <Tag color={type === 'cash' ? 'green' : 'blue'}>{type === 'cash' ? 'Tiền mặt' : 'Chuyển khoản'}</Tag>;
-            },
-        },
-        {
-            title: 'Trạng thái',
-            dataIndex: 'status',
-            key: 'status',
-            render: (status: string) => {
-                const statusMap: Record<string, { label: string; color: string }> = {
-                    locked_pending: { label: 'Đang thao tác', color: 'gold' },
-                    pending: { label: 'Chờ xử lý', color: 'orange' },
-                    paid: { label: 'Đã thanh toán', color: 'green' },
-                    confirmed: { label: 'Đã xác nhận', color: 'blue' },
-                    cancelled: { label: 'Đã hủy', color: 'default' },
-                };
-                const item = statusMap[status] || { label: status, color: 'default' };
-                return <Tag color={item.color}>{item.label}</Tag>;
-            },
-        },
-        {
-            title: 'Tổng tiền',
-            dataIndex: 'total_price',
-            key: 'total_price',
-            align: 'right' as const,
-            render: (value: string) => `${Number(value).toLocaleString()}đ`,
-        },
-        {
-            title: 'Thao tác',
-            key: 'actions',
-            align: 'right' as const,
-            render: (_: any, record: any) => (
-                <Popconfirm
-                    title="Hủy booking"
-                    description="Bạn có chắc chắn muốn hủy booking này chứ?"
-                    okText="Hủy booking"
-                    cancelText="Không"
-                    okButtonProps={{ danger: true }}
-                    onConfirm={(event) => {
-                        event?.stopPropagation();
-                        handleCancelBooking(record);
-                    }}
-                    onCancel={(event) => event?.stopPropagation()}
-                >
-                    <Button danger size="small" disabled={record.status === 'cancelled'} onClick={(event) => event.stopPropagation()}>
-                        Hủy
-                    </Button>
-                </Popconfirm>
-            ),
-        },
-    ];
+    const activeFieldTypeName = props.tenantBookingFieldTypes?.find((ft: any) => ft.id === activeFieldTypeId)?.name;
 
     return (
         <>
-            <Head title={fieldType ? `Đặt sân ${fieldType.name}` : 'Đặt sân offline'} />
+            <Head title={activeFieldTypeName ? `Đặt sân ${activeFieldTypeName}` : 'Đặt sân offline'} />
             <Space direction="vertical" size={24} style={{ width: '100%' }}>
-                <div>
-                    <Title level={2} style={{ marginBottom: 4 }}>{fieldType ? `Đặt sân ${fieldType.name}` : 'Đặt sân offline'}</Title>
-                    <Text type="secondary">Nhân viên tạo đơn đặt sân khi khách đến sân trực tiếp.</Text>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div>
+                        <Title level={2} style={{ marginBottom: 4 }}>
+                            {activeFieldTypeName ? `Đặt sân ${activeFieldTypeName}` : 'Đặt sân offline'}
+                        </Title>
+                        <Text type="secondary">Nhân viên tạo đơn đặt sân khi khách đến sân trực tiếp.</Text>
+                    </div>
                 </div>
 
-                <Card bodyStyle={{ padding: 24 }} bordered={false}>
-                    <Row gutter={[24, 16]} style={{ marginBottom: 24 }}>
-                        <Col xs={24} md={6}>
-                            <Text strong><CalendarOutlined /> Chọn ngày:</Text>
-                            <AppDatePicker value={selectedDate} onChange={onDateChange} style={{ width: '100%', marginTop: 8 }} />
-                        </Col>
-                        <Col xs={24} md={6}>
-                            <Text strong><UserOutlined /> Họ và tên:</Text>
-                            <Input value={customerName} onChange={(e) => setCustomerName(e.target.value)} placeholder="Nhập họ tên" style={{ marginTop: 8 }} />
-                        </Col>
-                        <Col xs={24} md={6}>
-                            <Text strong>Số điện thoại:</Text>
-                            <Input value={customerPhone} onChange={(e) => setCustomerPhone(e.target.value)} placeholder="Nhập SĐT" style={{ marginTop: 8 }} />
-                        </Col>
-                        <Col xs={24} md={6}>
-                            <Text strong><CreditCardOutlined /> Thanh toán:</Text>
-                            <Radio.Group value={paymentType} onChange={(e) => setPaymentType(e.target.value)} style={{ width: '100%', marginTop: 8 }}>
-                                <Radio.Button value="cash" style={{ width: '50%', textAlign: 'center' }}>Tiền mặt</Radio.Button>
-                                <Radio.Button value="banking" style={{ width: '50%', textAlign: 'center' }}>Chuyển khoản</Radio.Button>
-                            </Radio.Group>
-                        </Col>
-                        <Col span={24}>
-                            <Text strong>Ghi chú:</Text>
-                            <Input.TextArea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Nhập ghi chú nếu có" rows={2} style={{ marginTop: 8 }} />
-                        </Col>
-                    </Row>
+                <Card bordered={false} bodyStyle={{ padding: 24 }} style={{ boxShadow: '0 4px 12px rgba(0,0,0,0.02)', borderRadius: 12 }}>
+                    {/* Bảng điều khiển (Control Panel) */}
+                    <div style={{
+                        background: '#fcfcfc',
+                        padding: '20px 24px',
+                        borderRadius: 10,
+                        border: '1px solid #f0f0f0',
+                        marginBottom: 24
+                    }}>
+                        {/* Hàng 1: Môn thể thao (1 mình 1 hàng) */}
+                        <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
+                            <Col xs={24} md={6}>
+                                <div style={{ marginBottom: 8 }}>
+                                    <AppstoreOutlined style={{ marginRight: 6, color: '#7cb305' }} />
+                                    <Text strong style={{ fontSize: 12, color: '#555' }}>MÔN THỂ THAO</Text>
+                                </div>
+                                <Select
+                                    value={activeFieldTypeId}
+                                    onChange={(val) => setActiveFieldTypeId(val)}
+                                    style={{ width: '100%' }}
+                                    placeholder="Tất cả môn"
+                                    allowClear
+                                >
+                                    {props.tenantBookingFieldTypes?.map((ft: any) => (
+                                        <Select.Option key={ft.id} value={ft.id}>
+                                            {ft.name}
+                                        </Select.Option>
+                                    ))}
+                                </Select>
+                            </Col>
+                        </Row>
 
+                        {/* Hàng 2: Ngày đặt và các trường thông tin khác */}
+                        <Row gutter={[16, 16]} align="bottom">
+                            <Col xs={24} sm={12} md={4}>
+                                <div style={{ marginBottom: 6 }}>
+                                    <CalendarOutlined style={{ marginRight: 6, color: '#7cb305' }} />
+                                    <Text strong style={{ fontSize: 12, color: '#555' }}>NGÀY ĐẶT</Text>
+                                </div>
+                                <AppDatePicker value={selectedDate} onChange={onDateChange} style={{ width: '100%' }} />
+                            </Col>
+
+                            <Col xs={24} sm={12} md={7}>
+                                <div style={{ marginBottom: 6 }}>
+                                    <UserOutlined style={{ marginRight: 6, color: '#7cb305' }} />
+                                    <Text strong style={{ fontSize: 12, color: '#555' }}>TÊN KHÁCH HÀNG</Text>
+                                </div>
+                                <Input value={customerName} onChange={(e) => setCustomerName(e.target.value)} placeholder="Họ và tên" />
+                            </Col>
+
+                            <Col xs={24} sm={12} md={6}>
+                                <div style={{ marginBottom: 6 }}>
+                                    <Text strong style={{ fontSize: 12, color: '#555', marginLeft: 18 }}>SỐ ĐIỆN THOẠI</Text>
+                                </div>
+                                <Input value={customerPhone} onChange={(e) => setCustomerPhone(e.target.value)} placeholder="Nhập số điện thoại" />
+                            </Col>
+
+                            <Col xs={24} sm={24} md={7}>
+                                <div style={{ marginBottom: 6 }}>
+                                    <CreditCardOutlined style={{ marginRight: 6, color: '#7cb305' }} />
+                                    <Text strong style={{ fontSize: 12, color: '#555' }}>HÌNH THỨC THANH TOÁN</Text>
+                                </div>
+                                <Radio.Group value={paymentType} onChange={(e) => setPaymentType(e.target.value)} style={{ width: '100%' }}>
+                                    <Radio.Button value="cash" style={{ width: '50%', textAlign: 'center' }}>Tiền mặt</Radio.Button>
+                                    <Radio.Button value="banking" style={{ width: '50%', textAlign: 'center' }}>Chuyển khoản</Radio.Button>
+                                </Radio.Group>
+                            </Col>
+                        </Row>
+                    </div>
+
+                    {/* Lưới lịch đặt sân */}
                     <Spin spinning={loadingSlots}>
-                        <div style={{ overflowX: 'auto', border: '1px solid #f0f0f0', borderRadius: 8, paddingBottom: 16 }}>
+                        <div style={{ 
+                            overflowX: 'auto', 
+                            border: '1px solid #ebebeb', 
+                            borderRadius: 12, 
+                            paddingBottom: 12,
+                            boxShadow: '0 2px 8px rgba(0,0,0,0.01)'
+                        }}>
                             <div style={{ minWidth: 1500 }}>
-                                <div style={{ display: 'flex', background: '#7cb305', borderBottom: '1px solid #ccc', height: 40 }}>
-                                    <div style={{ width: 120, flexShrink: 0, padding: '0 16px', borderRight: '1px solid #ccc' }} />
-                                    <div style={{ flex: 1, display: 'flex', position: 'relative' }}>
+                                {/* Timeline Header */}
+                                <div style={{ 
+                                    display: 'flex', 
+                                    background: 'linear-gradient(90deg, #7cb305, #689704)', 
+                                    borderBottom: '1px solid #5a8700', 
+                                    height: 44,
+                                    alignItems: 'center'
+                                }}>
+                                    <div style={{ 
+                                        width: 120, 
+                                        flexShrink: 0, 
+                                        padding: '0 16px', 
+                                        borderRight: '1px solid rgba(255,255,255,0.15)', 
+                                        display: 'flex', 
+                                        alignItems: 'center', 
+                                        justifyContent: 'center',
+                                        color: '#fff', 
+                                        fontWeight: 600,
+                                        fontSize: 12
+                                    }}>
+                                        Tên Sân
+                                    </div>
+                                    <div style={{ flex: 1, display: 'flex', position: 'relative', height: '100%' }}>
                                         {timeSlots.map((time, index) => (
-                                            <div key={index} style={{ flex: 1, position: 'relative', borderRight: '1px solid #ccc' }}>
-                                                <div style={{ position: 'absolute', left: '-20px', width: 40, textAlign: 'center', top: 8, fontSize: 11, color: '#333', fontWeight: 500 }}>{time}</div>
+                                            <div key={index} style={{ 
+                                                flex: 1, 
+                                                position: 'relative', 
+                                                height: '100%',
+                                                borderRight: '1px solid rgba(255,255,255,0.12)' 
+                                            }}>
+                                                <div style={{ 
+                                                    position: 'absolute', 
+                                                    left: '-20px', 
+                                                    width: 40, 
+                                                    textAlign: 'center', 
+                                                    top: 13, 
+                                                    fontSize: 11, 
+                                                    color: '#fff', 
+                                                    fontWeight: 600 
+                                                }}>{time}</div>
                                             </div>
                                         ))}
-                                        <div style={{ position: 'absolute', right: 0, top: 8, width: 40, textAlign: 'center', marginRight: -20, fontSize: 11, color: '#333', fontWeight: 500 }}>23:00</div>
+                                        <div style={{ 
+                                            position: 'absolute', 
+                                            right: 0, 
+                                            top: 13, 
+                                            width: 40, 
+                                            textAlign: 'center', 
+                                            marginRight: -20, 
+                                            fontSize: 11, 
+                                            color: '#fff', 
+                                            fontWeight: 600 
+                                        }}>23:00</div>
                                     </div>
                                 </div>
 
+                                {/* Bảng các Sân */}
                                 {tenantFields.length === 0 ? (
-                                    <div style={{ padding: 40, textAlign: 'center', color: '#999' }}>Không có sân nào</div>
+                                    <div style={{ padding: 48, textAlign: 'center', color: '#aaa', fontSize: 14 }}>
+                                        Không có dữ liệu sân hiển thị
+                                    </div>
                                 ) : tenantFields.map((field) => (
-                                    <div key={field.id} style={{ display: 'flex', borderBottom: '1px solid #ccc', minHeight: 52 }}>
-                                        <div style={{ width: 120, flexShrink: 0, padding: 16, background: '#fff', borderRight: '1px solid #ccc', fontWeight: 500, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{field.name}</div>
+                                    <div key={field.id} style={{ display: 'flex', borderBottom: '1px solid #e8e8e8', minHeight: 52 }}>
+                                        <div style={{ 
+                                            width: 120, 
+                                            flexShrink: 0, 
+                                            padding: 12, 
+                                            background: '#fafafa', 
+                                            borderRight: '1px solid #e8e8e8', 
+                                            fontWeight: 600, 
+                                            color: '#434343',
+                                            display: 'flex', 
+                                            alignItems: 'center', 
+                                            justifyContent: 'center',
+                                            textAlign: 'center',
+                                            fontSize: 13
+                                        }}>
+                                            {field.name}
+                                        </div>
                                         <div style={{ flex: 1, display: 'flex' }}>
                                             {field.slots?.map((slot: any, idx: number) => {
                                                 const isSelected = selectedSlots.some(s => s.field_id === field.id && s.start_time === slot.start_time);
                                                 const isBooked = slot.status === 'booked';
                                                 const isPending = slot.status === 'pending_payment';
                                                 const isUnavailable = !slot.is_available;
-                                                const isHighlighted = isHistoryHighlighted(field.id, slot);
                                                 const bgColor = isSelected ? '#bae0ff' : isBooked ? '#ff4d4f' : isPending ? '#faad14' : 'transparent';
 
                                                 return (
@@ -306,11 +287,10 @@ export default function Booking({ fieldType }: { fieldType?: any }) {
                                                         key={idx}
                                                         style={{
                                                             flex: 1,
-                                                            borderRight: '1px solid #ccc',
+                                                            borderRight: '1px solid #e8e8e8',
                                                             background: bgColor,
-                                                            boxShadow: isHighlighted ? 'inset 0 0 0 3px #722ed1' : undefined,
                                                             cursor: isUnavailable ? 'not-allowed' : 'pointer',
-                                                            transition: 'background 0.2s, box-shadow 0.2s',
+                                                            transition: 'all 0.15s ease',
                                                         }}
                                                         onClick={() => {
                                                             if (isUnavailable) return;
@@ -335,56 +315,64 @@ export default function Booking({ fieldType }: { fieldType?: any }) {
                         </div>
                     </Spin>
 
-                    <div style={{ marginTop: 24, display: 'flex', gap: 16, justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap' }}>
-                        <Space size={16} wrap>
-                            <Text type="secondary"><span style={{ display: 'inline-block', width: 14, height: 14, border: '1px solid #ddd', marginRight: 6, verticalAlign: -2 }} />Còn trống</Text>
-                            <Text type="secondary"><span style={{ display: 'inline-block', width: 14, height: 14, background: '#bae0ff', marginRight: 6, verticalAlign: -2 }} />Đang chọn</Text>
-                            <Text type="secondary"><span style={{ display: 'inline-block', width: 14, height: 14, background: '#faad14', marginRight: 6, verticalAlign: -2 }} />Đang thao tác</Text>
-                            <Text type="secondary"><span style={{ display: 'inline-block', width: 14, height: 14, background: '#ff4d4f', marginRight: 6, verticalAlign: -2 }} />Đã đặt</Text>
+                    {/* Footer Trạng thái & Nút Đặt sân */}
+                    <div style={{ 
+                        marginTop: 24, 
+                        display: 'flex', 
+                        gap: 16, 
+                        justifyContent: 'space-between', 
+                        alignItems: 'center', 
+                        flexWrap: 'wrap',
+                        background: '#fafafa',
+                        padding: '16px 24px',
+                        borderRadius: 10,
+                        border: '1px solid #f0f0f0'
+                    }}>
+                        <Space size={20} wrap>
+                            <Text type="secondary" style={{ fontSize: 13 }}>
+                                <span style={{ display: 'inline-block', width: 14, height: 14, border: '1px solid #d9d9d9', borderRadius: 4, marginRight: 8, verticalAlign: -2, background: '#fff' }} />
+                                Còn trống
+                            </Text>
+                            <Text type="secondary" style={{ fontSize: 13 }}>
+                                <span style={{ display: 'inline-block', width: 14, height: 14, background: '#bae0ff', borderRadius: 4, marginRight: 8, verticalAlign: -2 }} />
+                                Đang chọn
+                            </Text>
+                            <Text type="secondary" style={{ fontSize: 13 }}>
+                                <span style={{ display: 'inline-block', width: 14, height: 14, background: '#faad14', borderRadius: 4, marginRight: 8, verticalAlign: -2 }} />
+                                Đang thao tác
+                            </Text>
+                            <Text type="secondary" style={{ fontSize: 13 }}>
+                                <span style={{ display: 'inline-block', width: 14, height: 14, background: '#ff4d4f', borderRadius: 4, marginRight: 8, verticalAlign: -2 }} />
+                                Đã đặt
+                            </Text>
                         </Space>
 
-                        <Space size={16}>
+                        <Space size={24}>
                             <div style={{ textAlign: 'right' }}>
-                                <Text type="secondary">Tổng cộng</Text>
-                                <div style={{ fontSize: 24, fontWeight: 700, color: '#ff4d4f' }}>{totalPrice.toLocaleString()}đ</div>
+                                <Text type="secondary" style={{ fontSize: 12 }}>TỔNG CỘNG</Text>
+                                <div style={{ fontSize: 24, fontWeight: 700, color: '#ff4d4f', lineHeight: 1.2 }}>{totalPrice.toLocaleString()}đ</div>
                             </div>
-                            <Button type="primary" size="large" loading={submitting} disabled={selectedSlots.length === 0} onClick={handleBook}>
+                            <Button 
+                                type="primary" 
+                                size="large" 
+                                loading={submitting} 
+                                disabled={selectedSlots.length === 0} 
+                                onClick={handleBook}
+                                style={{ 
+                                    height: 48, 
+                                    paddingLeft: 32, 
+                                    paddingRight: 32, 
+                                    borderRadius: 8,
+                                    fontSize: 15,
+                                    fontWeight: 600,
+                                    background: '#7cb305',
+                                    borderColor: '#7cb305'
+                                }}
+                            >
                                 Đặt sân
                             </Button>
                         </Space>
                     </div>
-                </Card>
-
-                <Card
-                    title="Lịch sử đặt sân"
-                    extra={(
-                        <Radio.Group value={historyType} onChange={(e) => {
-                            setHistoryType(e.target.value);
-                            setSelectedHistoryBooking(null);
-                        }}>
-                            <Radio.Button value="all">Tất cả</Radio.Button>
-                            <Radio.Button value="cash">Tiền mặt</Radio.Button>
-                            <Radio.Button value="banking">Chuyển khoản</Radio.Button>
-                        </Radio.Group>
-                    )}
-                    bordered={false}
-                >
-                    <Table
-                        rowKey="id"
-                        columns={historyColumns}
-                        dataSource={bookingHistory}
-                        loading={loadingHistory}
-                        pagination={{ pageSize: 8 }}
-                        rowSelection={{
-                            type: 'radio',
-                            selectedRowKeys: selectedHistoryBooking ? [selectedHistoryBooking.id] : [],
-                            onChange: (_, selectedRows) => setSelectedHistoryBooking(selectedRows[0] || null),
-                        }}
-                        onRow={(record) => ({
-                            onClick: () => setSelectedHistoryBooking(record),
-                            style: { cursor: 'pointer' },
-                        })}
-                    />
                 </Card>
             </Space>
         </>
