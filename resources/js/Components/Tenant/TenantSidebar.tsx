@@ -46,12 +46,12 @@ export default function TenantSidebar({ collapsed }: TenantSidebarProps) {
             children: [
                 {
                     key: `${base}/booking`,
-                    label: <Link href={`${base}/booking`}>Tất cả môn thể thao</Link>,
+                    label: <Link href={`${base}/booking`}>Đặt sân</Link>,
                 },
-                ...bookingFieldTypes.map((fieldType: any) => ({
-                    key: `${base}/booking?field_type_id=${fieldType.id}`,
-                    label: <Link href={`${base}/booking?field_type_id=${fieldType.id}`}>{fieldType.name}</Link>,
-                })),
+                {
+                    key: `${base}/booking/history`,
+                    label: <Link href={`${base}/booking/history`}>Lịch sử đặt</Link>,
+                },
             ],
         },
         {

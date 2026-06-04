@@ -221,6 +221,17 @@ class PublicFieldController extends Controller
         ]);
     }
 
+    public function cancellationInfo()
+    {
+        $tenants = \App\Models\Tenant::query()
+            ->where('is_active', true)
+            ->get(['id', 'name', 'phone', 'address']);
+
+        return Inertia::render('Public/Cancellation', [
+            'tenants' => $tenants,
+        ]);
+    }
+
     private function formatCheckoutBookings(Collection $bookings): array
     {
         return $bookings->map(function ($booking) {
