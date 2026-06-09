@@ -4,12 +4,13 @@ namespace App\Models\Tenant;
 
 use App\Enums\StaffRole;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Stancl\Tenancy\Database\Concerns\BelongsToTenant;
 
 class Staff extends Authenticatable
 {
-    use BelongsToTenant;
+    use BelongsToTenant, SoftDeletes;
 
     protected $table = 'staff';
 
@@ -21,6 +22,7 @@ class Staff extends Authenticatable
         'password',
         'role',
         'is_active',
+        'permissions',
     ];
 
     protected $hidden = [
@@ -34,6 +36,7 @@ class Staff extends Authenticatable
             'password' => 'hashed',
             'role' => StaffRole::class,
             'is_active' => 'boolean',
+            'permissions' => 'array',
         ];
     }
 
