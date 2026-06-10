@@ -220,78 +220,88 @@ class TenantSubscriptionService
      */
     public function activateSubscription(string $transactionRef, float $transferAmount): array
     {
-        // 1. Tìm thanh toán sử dụng withoutGlobalScopes()
-        $payment = SubscriptionPayment::withoutGlobalScopes()
+        Log::info("Subscription: activateSubscription called", [
+            'ref' => $transactionRef,
+            'amount' => $transferAmount,
+        ]);
+
+        // 1. Tìm thanh toán - Subscription/SubscriptionPayment là central models,
+        //    phải dùng withoutGlobalScopes() VÀ luôn chỉ định connection 'mysql' (central DB)
+        $payment = SubscriptionPayment::on('mysql')
+            ->withoutGlobalScopes()
             ->where('transaction_ref', $transactionRef)
             ->where('status', 'pending')
             ->first();
 
         if (!$payment) {
+            Log::warning("Subscription: Payment not found or not pending", ['ref' => $transactionRef]);
             return ['success' => false, 'message' => "Payment with ref {$transactionRef} not found or not pending"];
         }
 
-        if ($transferAmount < $payment->amount) {
+        Log::info("Subscription: Payment found", [
+            'payment_id' => $payment->id,
+            'tenant_id'  => $payment->tenant_id,
+            'amount'     => $payment->amount,
+        ]);
+
+        // So sánh theo floor() vì VND không có xu:
+        // transferAmount từ SePay luôn là số nguyên, còn DB có thể lưu số thập phân do tính proration
+        // Ví dụ: transfer 3413 hợp lệ khi DB là 3413.33
+        if (floor($transferAmount) < floor((float) $payment->amount)) {
             Log::error("Subscription: Insufficient amount for Ref: {$transactionRef}. Expected: {$payment->amount}, Got: {$transferAmount}");
             return ['success' => false, 'message' => 'Insufficient amount'];
         }
 
-        // Lưu tenant ID ban đầu để khôi phục tránh rò rỉ context
-        $originalTenantId = tenancy()->initialized ? tenant('id') : null;
-
         try {
-            // Kích hoạt ngữ cảnh tenant
-            tenancy()->initialize($payment->tenant_id);
-
-            DB::transaction(function () use ($payment) {
+            // Luôn dùng central DB connection - KHÔNG gọi tenancy()->initialize()
+            // vì Subscription và SubscriptionPayment là central models (shared DB)
+            DB::connection('mysql')->transaction(function () use ($payment) {
                 // 1. Cập nhật Payment
-                $payment->update([
-                    'status' => 'success',
-                    'paid_at' => now(),
-                ]);
+                $payment->status  = 'success';
+                $payment->paid_at = now();
+                $payment->save();
 
-                // 2. Cập nhật Subscription
-                $subscription = $payment->subscription;
+                // 2. Load subscription qua central connection
+                $subscription = Subscription::on('mysql')
+                    ->withoutGlobalScopes()
+                    ->find($payment->subscription_id);
 
-                // Tìm gói cũ đang active
-                $oldActiveSubscription = Subscription::where('tenant_id', $payment->tenant_id)
+                if (!$subscription) {
+                    throw new \Exception("Subscription ID {$payment->subscription_id} not found");
+                }
+
+                // 3. Tìm gói cũ đang active (nếu có)
+                $oldActiveSubscription = Subscription::on('mysql')
+                    ->withoutGlobalScopes()
+                    ->where('tenant_id', $payment->tenant_id)
                     ->where('id', '!=', $subscription->id)
                     ->whereIn('status', ['active', 'trial'])
                     ->first();
 
-                // Kích hoạt gói mới
-                $subscription->update([
-                    'status' => 'active',
-                    'starts_at' => $payment->billing_period_start,
-                    'ends_at' => $payment->billing_period_end,
-                ]);
+                // 4. Kích hoạt gói mới
+                $subscription->status    = 'active';
+                $subscription->starts_at = $payment->billing_period_start;
+                $subscription->ends_at   = $payment->billing_period_end;
+                $subscription->save();
 
+                Log::info("Subscription: Activated", ['subscription_id' => $subscription->id]);
+
+                // 5. Hủy gói cũ nếu có
                 if ($oldActiveSubscription) {
-                    $oldActiveSubscription->update([
-                        'status' => 'expired',
-                        'ends_at' => now(),
-                    ]);
+                    $oldActiveSubscription->status  = 'expired';
+                    $oldActiveSubscription->ends_at = now();
+                    $oldActiveSubscription->save();
+                    Log::info("Subscription: Old subscription expired", ['id' => $oldActiveSubscription->id]);
                 }
             });
 
             Log::info("Subscription: Successfully processed Ref: {$transactionRef}");
-            
-            // Khôi phục tenant context ban đầu
-            if ($originalTenantId) {
-                tenancy()->initialize($originalTenantId);
-            } else {
-                tenancy()->end();
-            }
 
             return ['success' => true];
         } catch (\Exception $e) {
-            Log::error("Subscription ERROR: " . $e->getMessage());
-
-            // Luôn đảm bảo phục hồi tenant context
-            if ($originalTenantId) {
-                tenancy()->initialize($originalTenantId);
-            } else {
-                tenancy()->end();
-            }
+            Log::error("Subscription ERROR for Ref {$transactionRef}: " . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+            ]);
 
             return ['success' => false, 'message' => $e->getMessage()];
         }
