@@ -3,6 +3,7 @@
 namespace App\Services\Subscription\Adapters;
 
 use App\Services\Subscription\PaymentAdapter;
+use App\Services\Subscription\TenantSubscriptionService;
 use App\Models\SubscriptionPayment;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
