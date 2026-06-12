@@ -7,7 +7,7 @@
 /* COVER */
 
 .stadium-cover {
-    height: 320px;
+    height: 420px;
     background-size: cover;
     background-position: center;
     position: relative;
@@ -22,7 +22,8 @@
 /* HEADER */
 
 .stadium-header {
-    background: #7CB305;
+    /* background: #7CB305; */
+    background: #1b870b;
     padding: 0 30px 24px;
     position: relative;
     display: flex;
@@ -101,7 +102,8 @@
 
 
 .custom-tabs {
-    background: #7CB305;
+    /* background: #7CB305; */
+    background: #1b870b;
     display: flex;
     justify-content: space-around;
     align-items: center;
@@ -132,7 +134,8 @@
 
 .stadium-content {
     padding: 30px;
-    background: #7CB305;
+    /* background: #7CB305; */
+    background: #1b870b;
     min-height: 500px;
 }
 
