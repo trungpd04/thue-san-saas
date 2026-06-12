@@ -7,16 +7,19 @@
 /* COVER */
 
 .stadium-cover {
-    height: 320px;
+    height: 420px;
     background-size: cover;
     background-position: center;
     position: relative;
+
+    
 }
 
 .cover-overlay {
     position: absolute;
     inset: 0;
     background: rgba(0, 0, 0, 0.2);
+    
 }
 
 /* HEADER */
