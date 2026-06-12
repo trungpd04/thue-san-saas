@@ -11,6 +11,7 @@ use App\Services\Auth\TenantAuthService;
 use Inertia\Inertia;
 use Inertia\Response;
 use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
+use Symfony\Component\HttpFoundation\RedirectResponse;
 
 class AuthenticatedTenantSessionController extends Controller
 {
@@ -46,7 +47,7 @@ class AuthenticatedTenantSessionController extends Controller
             ]);
         }
 
-        return redirect()->intended(route('tenant.dashboard', ['tenant' => tenant()->slug]));
+        return $this->redirectToTenantIntended($request);
     }
 
     public function destroy(Request $request, TenantAuthService $auth): SymfonyResponse
@@ -57,5 +58,25 @@ class AuthenticatedTenantSessionController extends Controller
         $request->session()->regenerateToken();
 
         return redirect()->route('tenant.login', ['tenant' => tenant()->slug]);
+    }
+
+    private function redirectToTenantIntended(Request $request): RedirectResponse
+    {
+        $slug = tenant()->slug;
+        $fallback = route('tenant.dashboard', ['tenant' => $slug]);
+        $intended = $request->session()->pull('url.intended');
+
+        if (! is_string($intended) || $intended === '') {
+            return redirect($fallback);
+        }
+
+        $tenantPath = '/tenant/' . $slug;
+        $intendedPath = parse_url($intended, PHP_URL_PATH);
+
+        if (is_string($intendedPath) && str_starts_with($intendedPath, $tenantPath)) {
+            return redirect($intended);
+        }
+
+        return redirect($fallback);
     }
 }

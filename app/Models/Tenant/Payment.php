@@ -16,6 +16,7 @@ class Payment extends Model
         'customer_id',
         'amount',
         'payment_method',
+        'type',
         'status',
         'paid_at',
         'note',

@@ -3,22 +3,21 @@
 namespace App\Http\Controllers\Webhook\SePay;
 
 use App\Http\Controllers\Controller;
-use App\Services\Subscription\PaymentManager;
-use App\Services\Subscription\Strategies\SepayStrategy;
+use App\Services\Subscription\TenantSubscriptionService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
 class SePayWebhookController extends Controller
 {
-    protected $paymentManager;
+    protected $subscriptionService;
 
-    public function __construct(PaymentManager $paymentManager)
+    public function __construct(TenantSubscriptionService $subscriptionService)
     {
-        $this->paymentManager = $paymentManager;
+        $this->subscriptionService = $subscriptionService;
     }
 
     /**
-     * Tiếp nhận webhook từ SePay (gọi PaymentManager với SepayStrategy)
+     * Tiếp nhận webhook từ SePay
      */
     public function handle(Request $request)
     {
@@ -39,10 +38,8 @@ class SePayWebhookController extends Controller
         }
 
         try {
-            // Sử dụng PaymentManager với SepayStrategy
-            $result = $this->paymentManager
-                ->setStrategy(app(SepayStrategy::class))
-                ->handleWebhook($request->all());
+            // Sử dụng TenantSubscriptionService để xử lý webhook (Chuẩn UML mới)
+            $result = $this->subscriptionService->handleWebhook($request->all(), 'sepay');
 
             return response()->json($result);
         } catch (\Exception $e) {

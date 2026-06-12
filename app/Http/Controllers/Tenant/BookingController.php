@@ -1,0 +1,123 @@
+<?php
+
+namespace App\Http\Controllers\Tenant;
+
+use App\Http\Controllers\Controller;
+use App\Http\Requests\StoreBookingRequest;
+use App\Models\FieldType;
+use App\Models\Tenant\Booking;
+use App\Contracts\Tenant\IBookingService;
+use App\Contracts\Tenant\IFieldQueryService;
+use Illuminate\Http\Request;
+use Inertia\Inertia;
+
+class BookingController extends Controller
+{
+    public function __construct(
+        private readonly IFieldQueryService $fieldQueryService,
+        private readonly IBookingService $bookingService
+    ) {
+    }
+
+    public function index(Request $request)
+    {
+        $fieldTypeId = $request->query('field_type_id');
+
+        return Inertia::render('Tenant/Booking', [
+            'fieldType' => $fieldTypeId ? FieldType::query()->find($fieldTypeId) : null,
+        ]);
+    }
+
+    public function availableSlots(Request $request)
+    {
+        $dateStr = $request->query('date', now()->format('Y-m-d'));
+        $fieldTypeId = $request->query('field_type_id');
+        $data = $this->fieldQueryService->getAvailableSlots(tenant()->id, $dateStr, $fieldTypeId);
+
+        return response()->json([
+            'date' => $dateStr,
+            'day_type' => $data['day_type'],
+            'fields' => $data['fields'],
+        ]);
+    }
+
+    public function historyPage(Request $request)
+    {
+        return Inertia::render('Tenant/BookingHistory');
+    }
+
+    public function historyData(Request $request)
+    {
+        $dateStr = $request->query('date');
+        $type = $request->query('type');
+        $fieldTypeId = $request->query('field_type_id');
+        $search = $request->query('search');
+        $status = $request->query('status');
+
+        $bookings = Booking::query()
+            ->with(['field:id,name', 'customer:id,name,phone', 'payments' => function ($query) {
+                $query->select('id', 'booking_id', 'amount', 'payment_method', 'type', 'status', 'paid_at')
+                    ->latest();
+            }])
+            ->when($dateStr, function ($query) use ($dateStr) {
+                $query->whereDate('booking_date', $dateStr);
+            })
+            ->when($fieldTypeId, function ($query) use ($fieldTypeId) {
+                $query->whereHas('field', function ($fieldQuery) use ($fieldTypeId) {
+                    $fieldQuery->where('field_type_id', $fieldTypeId);
+                });
+            })
+            ->when(in_array($type, ['cash', 'banking'], true), function ($query) use ($type) {
+                $query->whereHas('payments', function ($paymentQuery) use ($type) {
+                    $paymentQuery->where('type', $type);
+                });
+            })
+            ->when($status, function ($query) use ($status) {
+                $query->where('status', $status);
+            })
+            ->when($search, function ($query) use ($search) {
+                $query->whereHas('customer', function ($customerQuery) use ($search) {
+                    $customerQuery->where('name', 'like', "%{$search}%")
+                        ->orWhere('phone', 'like', "%{$search}%");
+                });
+            })
+            ->latest('created_at')
+            ->get();
+
+        return response()->json([
+            'bookings' => $bookings,
+        ]);
+    }
+
+    public function store(StoreBookingRequest $request)
+    {
+        $validated = $request->validated();
+        $validated['payment_type'] = $validated['payment_type'] ?? 'cash';
+
+        $createdBookings = $this->bookingService->storeBooking(
+            tenant()->id,
+            $validated,
+            [
+                'booked_by' => auth('tenant')->id(),
+                'payment_type' => $validated['payment_type'],
+            ]
+        );
+
+        return response()->json([
+            'message' => 'Slot da duoc khoa tam thoi.',
+            'payment_type' => $validated['payment_type'],
+            'booking_ids' => collect($createdBookings)->pluck('id')->join(','),
+        ]);
+    }
+
+    public function destroy(Booking $booking)
+    {
+        $booking->update([
+            'status' => 'cancelled',
+        ]);
+
+        return response()->json([
+            'message' => 'Da huy booking.',
+        ]);
+    }
+}

@@ -5,9 +5,10 @@ namespace App\Services\Subscription;
 use App\Models\Plan;
 use App\Models\Subscription;
 use App\Models\SubscriptionPayment;
-use App\Services\Subscription\Strategies\MomoStrategy;
-use App\Services\Subscription\Strategies\SepayStrategy;
+use App\Services\Subscription\Adapters\MomoAdapter;
+use App\Services\Subscription\Adapters\SepayAdapter;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
 
 class TenantSubscriptionService
@@ -28,6 +29,11 @@ class TenantSubscriptionService
         $months = (int) $months;
 
         return DB::connection('mysql')->transaction(function () use ($plan, $tenant, $months, $method) {
+            $hasHistory = Subscription::where('tenant_id', $tenant->id)->exists();
+            if ($plan->price_monthly == 0 && $hasHistory) {
+                throw new \Exception("Gói dùng thử này chỉ dành cho tài khoản đăng ký lần đầu.");
+            }
+
             // 1. Xác định gói hiện tại và ngày hết hạn thực tế (bao gồm cả Trial)
             $activeSub = Subscription::where('tenant_id', $tenant->id)
                 ->whereIn('status', ['active', 'trial'])
@@ -130,13 +136,13 @@ class TenantSubscriptionService
             ]);
 
             // Sử dụng PaymentManager để xử lý thanh toán
-            $strategy = match ($method) {
-                'momo' => app(MomoStrategy::class),
-                default => app(SepayStrategy::class),
+            $adapter = match ($method) {
+                'momo' => app(MomoAdapter::class),
+                default => app(SepayAdapter::class),
             };
 
             $paymentResult = $this->paymentManager
-                ->setStrategy($strategy)
+                ->setAdapter($adapter)
                 ->processPayment($payment);
 
             return array_merge([
@@ -184,5 +190,120 @@ class TenantSubscriptionService
             }
             return false;
         });
+    }
+
+    /**
+     * Xử lý webhook chung (để Controller có thể delegate xuống)
+     *
+     * @param array $payload
+     * @param string $method
+     * @return array
+     */
+    public function handleWebhook(array $payload, string $method = 'sepay'): array
+    {
+        $adapter = match ($method) {
+            'momo' => app(MomoAdapter::class),
+            default => app(SepayAdapter::class),
+        };
+
+        return $this->paymentManager
+            ->setAdapter($adapter)
+            ->handleWebhook($payload);
+    }
+
+    /**
+     * Kích hoạt gói dịch vụ (Domain logic dùng chung cho tất cả các payment adapters)
+     *
+     * @param string $transactionRef
+     * @param float $transferAmount
+     * @return array
+     */
+    public function activateSubscription(string $transactionRef, float $transferAmount): array
+    {
+        Log::info("Subscription: activateSubscription called", [
+            'ref' => $transactionRef,
+            'amount' => $transferAmount,
+        ]);
+
+        // 1. Tìm thanh toán - Subscription/SubscriptionPayment là central models,
+        //    phải dùng withoutGlobalScopes() VÀ luôn chỉ định connection 'mysql' (central DB)
+        $payment = SubscriptionPayment::on('mysql')
+            ->withoutGlobalScopes()
+            ->where('transaction_ref', $transactionRef)
+            ->where('status', 'pending')
+            ->first();
+
+        if (!$payment) {
+            Log::warning("Subscription: Payment not found or not pending", ['ref' => $transactionRef]);
+            return ['success' => false, 'message' => "Payment with ref {$transactionRef} not found or not pending"];
+        }
+
+        Log::info("Subscription: Payment found", [
+            'payment_id' => $payment->id,
+            'tenant_id'  => $payment->tenant_id,
+            'amount'     => $payment->amount,
+        ]);
+
+        // So sánh theo floor() vì VND không có xu:
+        // transferAmount từ SePay luôn là số nguyên, còn DB có thể lưu số thập phân do tính proration
+        // Ví dụ: transfer 3413 hợp lệ khi DB là 3413.33
+        if (floor($transferAmount) < floor((float) $payment->amount)) {
+            Log::error("Subscription: Insufficient amount for Ref: {$transactionRef}. Expected: {$payment->amount}, Got: {$transferAmount}");
+            return ['success' => false, 'message' => 'Insufficient amount'];
+        }
+
+        try {
+            // Luôn dùng central DB connection - KHÔNG gọi tenancy()->initialize()
+            // vì Subscription và SubscriptionPayment là central models (shared DB)
+            DB::connection('mysql')->transaction(function () use ($payment) {
+                // 1. Cập nhật Payment
+                $payment->status  = 'success';
+                $payment->paid_at = now();
+                $payment->save();
+
+                // 2. Load subscription qua central connection
+                $subscription = Subscription::on('mysql')
+                    ->withoutGlobalScopes()
+                    ->find($payment->subscription_id);
+
+                if (!$subscription) {
+                    throw new \Exception("Subscription ID {$payment->subscription_id} not found");
+                }
+
+                // 3. Tìm gói cũ đang active (nếu có)
+                $oldActiveSubscription = Subscription::on('mysql')
+                    ->withoutGlobalScopes()
+                    ->where('tenant_id', $payment->tenant_id)
+                    ->where('id', '!=', $subscription->id)
+                    ->whereIn('status', ['active', 'trial'])
+                    ->first();
+
+                // 4. Kích hoạt gói mới
+                $subscription->status    = 'active';
+                $subscription->starts_at = $payment->billing_period_start;
+                $subscription->ends_at   = $payment->billing_period_end;
+                $subscription->save();
+
+                Log::info("Subscription: Activated", ['subscription_id' => $subscription->id]);
+
+                // 5. Hủy gói cũ nếu có
+                if ($oldActiveSubscription) {
+                    $oldActiveSubscription->status  = 'expired';
+                    $oldActiveSubscription->ends_at = now();
+                    $oldActiveSubscription->save();
+                    Log::info("Subscription: Old subscription expired", ['id' => $oldActiveSubscription->id]);
+                }
+            });
+
+            Log::info("Subscription: Successfully processed Ref: {$transactionRef}");
+
+            return ['success' => true];
+        } catch (\Exception $e) {
+            Log::error("Subscription ERROR for Ref {$transactionRef}: " . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return ['success' => false, 'message' => $e->getMessage()];
+        }
     }
 }

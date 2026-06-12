@@ -40,6 +40,8 @@ class HandleInertiaRequests extends Middleware
             'auth.user' => $request->user(),
             'flash' => [
                 'free_plan_login_popup' => fn () => $request->session()->get('free_plan_login_popup'),
+                'success' => fn () => $request->session()->get('success'),
+                'error' => fn () => $request->session()->get('error'),
             ],
             'tenancy' => fn () => [
                 'initialized' => tenancy()->initialized,
@@ -49,6 +51,17 @@ class HandleInertiaRequests extends Middleware
                     'slug' => tenant()->slug,
                 ] : null,
             ],
+            'tenantBookingFieldTypes' => fn () => tenancy()->initialized && auth('tenant')->check()
+                ? \App\Models\FieldType::query()
+                    ->where('is_active', true)
+                    ->orderBy('name')
+                    ->get(['id', 'name', 'sport'])
+                    ->map(fn ($fieldType) => [
+                        'id' => $fieldType->id,
+                        'name' => $fieldType->name,
+                        'sport' => $fieldType->sport,
+                    ])
+                : [],
         ];
     }
 }

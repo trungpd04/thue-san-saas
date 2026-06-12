@@ -20,6 +20,8 @@ class Tenant extends BaseTenant
             'slug',
             'phone',
             'address',
+            'latitude',
+            'longitude',
             'is_active',
         ];
     }

@@ -1,21 +1,32 @@
 <?php
 
-namespace App\Services;
+namespace App\Services\Tenant;
 
+use App\Contracts\Tenant\IFieldQueryService;
 use App\Models\Tenant\Field;
 use App\Models\Tenant\Booking;
 use App\Models\Tenant\FieldPrice;
-use App\Models\Tenant\Customer;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\DB;
 
-class PublicFieldService
+class FieldQueryService implements IFieldQueryService
 {
-    public function getActiveFields()
+    public function getActiveFields($lat = null, $lng = null, $fieldTypeId = null, $name = null): array
     {
-        $fields = Field::with(['tenant', 'fieldType'])
-            ->where('is_active', true)
-            ->get();
+        $query = Field::with(['tenant', 'fieldType'])->active();
+
+        if ($fieldTypeId) {
+            $query->filterByType($fieldTypeId);
+        }
+
+        if ($name) {
+            $query->filterByName($name);
+        }
+
+        if ($lat && $lng) {
+            $query->withDistance($lat, $lng);
+        }
+
+        $fields = $query->get();
 
         $grouped = [];
         foreach ($fields as $field) {
@@ -26,7 +37,10 @@ class PublicFieldService
                 $grouped[$key] = [
                     'tenant' => $field->tenant,
                     'field_type' => $field->fieldType,
-                    'location' => $field->location,
+                    'location' => $field->tenant->address,
+                    'latitude' => $field->tenant->latitude,
+                    'longitude' => $field->tenant->longitude,
+                    'distance' => isset($field->distance) ? round($field->distance, 2) : null,
                     'description' => $field->fieldType->description ?? $field->description,
                 ];
             }
@@ -49,11 +63,11 @@ class PublicFieldService
             ->get(['start_time', 'end_time']);
     }
 
-    public function getTenantActiveFields($tenant_id, $field_type_id = null)
+    public function getTenantActiveFields(string $tenantId, $fieldTypeId = null)
     {
-        $query = Field::where('tenant_id', $tenant_id)->where('is_active', true);
-        if ($field_type_id) {
-            $query->where('field_type_id', $field_type_id);
+        $query = Field::where('tenant_id', $tenantId)->where('is_active', true);
+        if ($fieldTypeId) {
+            $query->where('field_type_id', $fieldTypeId);
         }
         return $query->orderBy('name')->get(['id', 'name', 'field_type_id']);
     }
@@ -72,17 +86,17 @@ class PublicFieldService
             ->get(['id', 'field_id', 'start_time', 'end_time', 'status']);
     }
 
-    public function getAvailableSlots($tenant_id, string $dateStr, $field_type_id = null)
+    public function getAvailableSlots(string $tenantId, string $dateStr, $fieldTypeId = null): array
     {
         $date = Carbon::parse($dateStr);
         $dayType = $date->isWeekend() ? 'weekend' : 'weekday';
 
-        $fields = $this->getTenantActiveFields($tenant_id, $field_type_id);
+        $fields = $this->getTenantActiveFields($tenantId, $fieldTypeId);
         $fieldIds = $fields->pluck('id')->toArray();
         $bookings = $this->getBookingsForTenantFields($fieldIds, $dateStr);
 
         $fieldTypeIds = $fields->pluck('field_type_id')->unique()->toArray();
-        $fieldPrices = FieldPrice::where('tenant_id', $tenant_id)
+        $fieldPrices = FieldPrice::where('tenant_id', $tenantId)
             ->whereIn('field_type_id', $fieldTypeIds)
             ->where('day_type', $dayType)
             ->get();
@@ -155,97 +169,5 @@ class PublicFieldService
             'day_type' => $dayType,
             'fields' => $result,
         ];
-    }
-
-    public function storeBooking($tenant_id, array $validatedData)
-    {
-        $dateStr = $validatedData['date'];
-        $breakdown = $validatedData['pricing_breakdown'];
-        $now = now(); // Capture once for all bookings in this transaction
-
-        DB::beginTransaction();
-        try {
-            // Lock fields to prevent concurrent bookings
-            $fieldIdsToLock = collect($breakdown)->pluck('field_id')->unique()->toArray();
-            Field::whereIn('id', $fieldIdsToLock)->lockForUpdate()->get();
-
-            $this->validateNoOverlappingBookings($dateStr, $breakdown);
-
-            $customer = Customer::firstOrCreate(
-                ['tenant_id' => $tenant_id, 'phone' => $validatedData['customer_phone']],
-                ['name' => $validatedData['customer_name']]
-            );
-
-            $groupedBreakdown = collect($breakdown)->groupBy('field_id');
-            $createdBookings = [];
-
-            foreach ($groupedBreakdown as $fieldId => $slots) {
-                $slots = collect($slots)->sortBy('start_time')->values()->toArray();
-                $currentGroup = [];
-                foreach ($slots as $slot) {
-                    if (empty($currentGroup)) {
-                        $currentGroup[] = $slot;
-                    } else {
-                        $lastSlot = end($currentGroup);
-                        if ($lastSlot['end_time'] === $slot['start_time']) {
-                            $currentGroup[] = $slot;
-                        } else {
-                            $createdBookings[] = $this->createBookingFromGroup($tenant_id, $fieldId, $customer->id, $dateStr, $currentGroup, $validatedData['note'] ?? null, $now);
-                            $currentGroup = [$slot];
-                        }
-                    }
-                }
-                if (!empty($currentGroup)) {
-                    $createdBookings[] = $this->createBookingFromGroup($tenant_id, $fieldId, $customer->id, $dateStr, $currentGroup, $validatedData['note'] ?? null, $now);
-                }
-            }
-            DB::commit();
-        } catch (\Exception $e) {
-            DB::rollBack();
-            throw $e;
-        }
-
-        return $createdBookings;
-    }
-
-    private function validateNoOverlappingBookings(string $dateStr, array $breakdown)
-    {
-        foreach ($breakdown as $slot) {
-            $startSlot = $slot['start_time'] . ':00';
-            $endSlot = $slot['end_time'] . ':00';
-            
-            $overlapping = Booking::where('field_id', $slot['field_id'])
-                ->whereDate('booking_date', $dateStr)
-                ->whereIn('status', ['locked_pending', 'pending', 'confirmed', 'paid'])
-                ->where('start_time', '<', $endSlot)
-                ->where('end_time', '>', $startSlot)
-                ->exists();
-
-            if ($overlapping) {
-                throw new \Exception('Sân hiện đang có người thao tác, vui lòng chọn slot khác hoặc quay lại sau.');
-            }
-        }
-    }
-
-    private function createBookingFromGroup($tenant_id, $field_id, $customer_id, $date, $slots, $note = null, $lockedAt = null)
-    {
-        $startTime = $slots[0]['start_time'] . ':00';
-        $endTime = end($slots)['end_time'] . ':00';
-        $totalPrice = collect($slots)->sum('price');
-        
-        return Booking::create([
-            'tenant_id' => $tenant_id,
-            'field_id' => $field_id,
-            'customer_id' => $customer_id,
-            'booking_date' => $date,
-            'start_time' => $startTime,
-            'end_time' => $endTime,
-            'base_price' => $totalPrice,
-            'total_price' => $totalPrice,
-            'pricing_breakdown' => collect($slots)->map(function ($s) { return (array)$s; })->toArray(),
-            'status' => 'locked_pending',
-            'locked_at' => $lockedAt ?: now(),
-            'note' => $note ?: 'Web public booking',
-        ]);
     }
 }
