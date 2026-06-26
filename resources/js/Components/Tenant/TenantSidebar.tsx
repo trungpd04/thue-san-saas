@@ -101,15 +101,15 @@ export default function TenantSidebar({ collapsed }: TenantSidebarProps) {
     }
 
     // 7. Settings Group
-    const settingsChildren: MenuItem[] = [
-        {
+    const settingsChildren: MenuItem[] = [];
+
+    if (isManager) {
+        settingsChildren.push({
             key: `${base}/profile`,
             icon: <UserOutlined />,
             label: <Link href={`${base}/profile`}>Thông tin trung tâm</Link>,
-        }
-    ];
+        });
 
-    if (isManager) {
         settingsChildren.push({
             key: `${base}/sepay/settings`,
             icon: <CreditCardOutlined />,
@@ -123,12 +123,14 @@ export default function TenantSidebar({ collapsed }: TenantSidebarProps) {
         });
     }
 
-    menuItems.push({
-        key: 'settings-group',
-        icon: <SettingOutlined />,
-        label: 'Cài đặt',
-        children: settingsChildren,
-    });
+    if (settingsChildren.length > 0) {
+        menuItems.push({
+            key: 'settings-group',
+            icon: <SettingOutlined />,
+            label: 'Cài đặt',
+            children: settingsChildren,
+        });
+    }
 
     const activeKey = url;
     const defaultOpenKeys = [
