@@ -49,7 +49,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
 });
 
 
-Route::get('/', [SaasLandingController::class, 'index'])->name('saas.landing');
+Route::get('/admin/home', [SaasLandingController::class, 'index'])->name('saas.landing');
 
 Route::post('/register-tenant', [SaasLandingController::class, 'registerTenant'])->name('saas.register_tenant');
 
@@ -60,3 +60,8 @@ Route::get('/{slug}', [TenantPublicController::class, 'show'])
 
 Route::get('/{slug}/fields/{field_id}/schedule', [TenantPublicController::class, 'schedule'])
     ->name('tenant.public.schedule');
+
+
+// page guest
+
+Route::get('/', [PublicFieldController::class, 'index'])->name('guest.fields.index');
