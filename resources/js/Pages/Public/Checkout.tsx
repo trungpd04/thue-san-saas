@@ -142,7 +142,7 @@ function CheckoutContent({ bookings, tenant, payment }: CheckoutProps) {
                     <Link href={`/san/tenant/${tenant.id}/booking`} key="retry">
                         <Button type="primary" size="large">Đặt lại</Button>
                     </Link>,
-                    <Link href="/san" key="home">
+                    <Link href="/" key="home">
                         <Button size="large">Về danh sách sân</Button>
                     </Link>,
                 ]}
