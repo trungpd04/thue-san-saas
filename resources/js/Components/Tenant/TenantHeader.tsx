@@ -72,7 +72,14 @@ export default function TenantHeader({ collapsed, onToggle }: TenantHeaderProps)
                 <Dropdown menu={{ items: userMenuItems, onClick: onUserMenuClick }} placement="bottomRight" arrow>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
                         <Avatar style={{ background: '#7CB305' }} icon={<UserOutlined />} />
-                        <Typography.Text strong>Tenant</Typography.Text>
+                        <div style={{ display: 'flex', flexDirection: 'column', lineHeight: '1.2', textAlign: 'left' }}>
+                            <Typography.Text strong style={{ fontSize: 14 }}>
+                                {props.auth?.user?.name || 'Người dùng'}
+                            </Typography.Text>
+                            <Typography.Text type="secondary" style={{ fontSize: 11 }}>
+                                {(props.auth?.user?.role?.value || props.auth?.user?.role) === 'manager' ? 'Chủ sân' : 'Nhân viên'}
+                            </Typography.Text>
+                        </div>
                     </div>
                 </Dropdown>
             </div>
