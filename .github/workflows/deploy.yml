@@ -28,6 +28,9 @@ jobs:
         node-version: '22' # Đổi thành phiên bản Node bạn dùng cho React
 
     - name: install NPM Dependencies & Build React
+      env:
+        APP_NAME: Hệ thống quản lí sân đá thuê
+        VITE_APP_NAME: Hệ thống quản lí sân đá thuê
       run: |
         npm ci
         npm run build
