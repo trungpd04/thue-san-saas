@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html class="h-full bg-gray-200">
+
 <head>
+    <link rel="icon" type="image/x-icon" href="/favicon.ico" />
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
     <title inertia>{{ config('app.name', 'Laravel') }}</title>
@@ -8,7 +10,9 @@
     @viteReactRefresh
     @vite(['resources/css/app.css', 'resources/js/app.tsx'])
 </head>
+
 <body class="font-sans antialiased leading-none text-gray-800">
-@inertia
+    @inertia
 </body>
+
 </html>

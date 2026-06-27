@@ -29,7 +29,6 @@ export default function Landing({ plans }: LandingProps) {
 
     return (
         <>
-            <Head title="PITCH-SAAS - Nền tảng quản lý và vận hành sân thể thao thông minh" />
 
             <Layout style={{ minHeight: '100vh', background: '#fafbfc', fontFamily: 'Inter, sans-serif' }}>
                 
