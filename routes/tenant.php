@@ -39,7 +39,7 @@ Route::middleware([InitializeTenancyBySlug::class])
             ->name('tenant.logout');
 
         Route::middleware('auth:tenant')->group(function () {
-            Route::get('/dashboard', fn() => Inertia::render('Tenant/TenantDashboard'))
+            Route::get('/dashboard', [DashboardController::class, 'index'])
                 ->middleware(['permission:access_dashboard'])
                 ->name('tenant.dashboard');
 
@@ -74,8 +74,8 @@ Route::middleware([InitializeTenancyBySlug::class])
                 Route::put('/profile', [\App\Http\Controllers\Tenant\ProfileController::class, 'update'])->name('tenant.profile.update');
             });
 
-        // Trang chọn gói và thanh toán
-        Route::get('/subscription/register', [SubscriptionController::class, 'index'])->name('tenant.subscription.index');
+            // Trang chọn gói và thanh toán
+            Route::get('/subscription/register', [SubscriptionController::class, 'index'])->name('tenant.subscription.index');
             // Trang chọn gói và thanh toán
             Route::get('/subscription/register', [SubscriptionController::class, 'index'])->name('tenant.subscription.index');
 
