@@ -39,19 +39,40 @@ Route::middleware([InitializeTenancyBySlug::class])
             ->name('tenant.logout');
 
         Route::middleware('auth:tenant')->group(function () {
-            Route::get('/dashboard', fn() => Inertia::render('Tenant/TenantDashboard'))->name('tenant.dashboard');
-            Route::resource('fields', FieldController::class)->names('tenant.fields');
-            Route::resource('field-prices', FieldPriceController::class)->names('tenant.field-prices');
-            Route::get('/booking', [BookingController::class, 'index'])->name('tenant.booking.index');
-            Route::get('/booking/available-slots', [BookingController::class, 'availableSlots'])->name('tenant.booking.available-slots');
-            Route::get('/booking/history', [BookingController::class, 'historyPage'])->name('tenant.booking.history');
-            Route::get('/booking/history/data', [BookingController::class, 'historyData'])->name('tenant.booking.history-data');
-            Route::post('/booking', [BookingController::class, 'store'])->name('tenant.booking.store');
-            Route::delete('/booking/{booking}', [BookingController::class, 'destroy'])->name('tenant.booking.destroy');
+            Route::get('/dashboard', fn() => Inertia::render('Tenant/TenantDashboard'))
+                ->middleware(['permission:access_dashboard'])
+                ->name('tenant.dashboard');
 
-        // Hồ sơ trung tâm
-        Route::get('/profile', [\App\Http\Controllers\Tenant\ProfileController::class, 'edit'])->name('tenant.profile.edit');
-        Route::put('/profile', [\App\Http\Controllers\Tenant\ProfileController::class, 'update'])->name('tenant.profile.update');
+            Route::resource('fields', FieldController::class)
+                ->middleware(['permission:manage_fields'])
+                ->names('tenant.fields');
+
+            Route::resource('field-prices', FieldPriceController::class)
+                ->middleware(['permission:manage_field_prices'])
+                ->names('tenant.field-prices');
+
+            Route::middleware(['permission:manage_bookings'])->group(function () {
+                Route::get('/booking', [BookingController::class, 'index'])->name('tenant.booking.index');
+                Route::get('/booking/available-slots', [BookingController::class, 'availableSlots'])->name('tenant.booking.available-slots');
+                Route::get('/booking/history', [BookingController::class, 'historyPage'])->name('tenant.booking.history');
+                Route::get('/booking/history/data', [BookingController::class, 'historyData'])->name('tenant.booking.history-data');
+                Route::post('/booking', [BookingController::class, 'store'])->name('tenant.booking.store');
+                Route::delete('/booking/{booking}', [BookingController::class, 'destroy'])->name('tenant.booking.destroy');
+            });
+
+            Route::get('/customer', [\App\Http\Controllers\Tenant\CustomerController::class, 'index'])
+                ->middleware(['permission:manage_customers'])
+                ->name('tenant.customer');
+
+            Route::resource('staff', \App\Http\Controllers\Tenant\StaffController::class)
+                ->middleware(['role:manager'])
+                ->names('tenant.staff');
+
+            // Hồ sơ trung tâm
+            Route::middleware(['role:manager'])->group(function () {
+                Route::get('/profile', [\App\Http\Controllers\Tenant\ProfileController::class, 'edit'])->name('tenant.profile.edit');
+                Route::put('/profile', [\App\Http\Controllers\Tenant\ProfileController::class, 'update'])->name('tenant.profile.update');
+            });
 
         // Trang chọn gói và thanh toán
         Route::get('/subscription/register', [SubscriptionController::class, 'index'])->name('tenant.subscription.index');
