@@ -34,7 +34,7 @@ export default function PublicLanding({ tenant, fields }: any) {
                 className="stadium-cover"
                 style={{
                     backgroundImage:
-                        `url("/images/Badminton-1.jpg")`
+                        `url("/images/sports-background-dark-green-style.jpg")`
                 }}
             >
                 <div className="cover-overlay"></div>

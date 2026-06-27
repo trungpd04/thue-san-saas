@@ -38,7 +38,11 @@ class PublicFieldController extends Controller
         $fields = $this->fieldQueryService->getActiveFields($lat, $lng, $fieldTypeId, $name);
         $fieldTypes = \App\Models\FieldType::all();
 
-        return Inertia::render('Public/Fields', [
+        $view = ($request->route()->getName() === 'guest.fields.index')
+            ? 'GuestPage/SearchFields'
+            : 'Public/Fields';
+
+        return Inertia::render($view, [
             'fields' => $fields,
             'fieldTypes' => $fieldTypes,
             'filters' => [
@@ -48,6 +52,17 @@ class PublicFieldController extends Controller
                 'name' => $name,
             ]
         ]);
+
+        // return Inertia::render('Public/Fields', [
+        //     'fields' => $fields,
+        //     'fieldTypes' => $fieldTypes,
+        //     'filters' => [
+        //         'lat' => $lat,
+        //         'lng' => $lng,
+        //         'field_type_id' => $fieldTypeId,
+        //         'name' => $name,
+        //     ]
+        // ]);
     }
 
     public function bookings(Request $request, Field $field)
@@ -123,7 +138,7 @@ class PublicFieldController extends Controller
     public function checkout(Request $request)
     {
         $bookingIds = collect(explode(',', $request->query('booking_ids', '')))
-            ->map(fn ($id) => (int) trim($id))
+            ->map(fn($id) => (int) trim($id))
             ->filter()
             ->unique()
             ->values()
@@ -133,10 +148,10 @@ class PublicFieldController extends Controller
             ->whereIn('id', $bookingIds)
             ->with([
                 'tenant',
-                'customer' => fn ($query) => $query->withoutGlobalScopes(),
-                'field' => fn ($query) => $query->withoutGlobalScopes()->with('fieldType'),
-                'fieldSpecialEvent' => fn ($query) => $query->withoutGlobalScopes(),
-                'payments' => fn ($query) => $query->withoutGlobalScopes()->latest(),
+                'customer' => fn($query) => $query->withoutGlobalScopes(),
+                'field' => fn($query) => $query->withoutGlobalScopes()->with('fieldType'),
+                'fieldSpecialEvent' => fn($query) => $query->withoutGlobalScopes(),
+                'payments' => fn($query) => $query->withoutGlobalScopes()->latest(),
             ])
             ->orderBy('booking_date')
             ->orderBy('start_time')
@@ -191,7 +206,7 @@ class PublicFieldController extends Controller
     public function checkPaymentStatus(Request $request)
     {
         $bookingIds = collect(explode(',', $request->query('booking_ids', '')))
-            ->map(fn ($id) => (int) trim($id))
+            ->map(fn($id) => (int) trim($id))
             ->filter()
             ->unique()
             ->values()
@@ -200,10 +215,10 @@ class PublicFieldController extends Controller
         $bookings = \App\Models\Tenant\Booking::withoutGlobalScopes()
             ->whereIn('id', $bookingIds)
             ->with([
-                'customer' => fn ($query) => $query->withoutGlobalScopes(),
-                'field' => fn ($query) => $query->withoutGlobalScopes()->with('fieldType'),
-                'fieldSpecialEvent' => fn ($query) => $query->withoutGlobalScopes(),
-                'payments' => fn ($query) => $query->withoutGlobalScopes()->latest(),
+                'customer' => fn($query) => $query->withoutGlobalScopes(),
+                'field' => fn($query) => $query->withoutGlobalScopes()->with('fieldType'),
+                'fieldSpecialEvent' => fn($query) => $query->withoutGlobalScopes(),
+                'payments' => fn($query) => $query->withoutGlobalScopes()->latest(),
             ])
             ->orderBy('booking_date')
             ->orderBy('start_time')
