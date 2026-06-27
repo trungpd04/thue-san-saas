@@ -5,7 +5,12 @@ import react from '@vitejs/plugin-react'
 export default defineConfig(({ mode }) => {
     const env = loadEnv(mode, process.cwd(), '')
     /** Same value as Laravel config('app.name'); Vite does not expand "${APP_NAME}" in .env files */
-    const appName = env.APP_NAME || env.VITE_APP_NAME || 'Laravel'
+    const appName =
+        process.env.VITE_APP_NAME ||
+        process.env.APP_NAME ||
+        env.VITE_APP_NAME ||
+        env.APP_NAME ||
+        'Laravel';
 
     return {
         define: {
