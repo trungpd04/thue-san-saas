@@ -36,7 +36,7 @@ class DashboardService
                 ->whereYear('booking_date', $this->currentYear)
                 ->count(),
             'revenue' => Payment::where('tenant_id', $this->tenantId)
-                ->where('status', 'paid')
+                ->where('status', 'success')
                 ->whereMonth('paid_at', $this->now->month)
                 ->whereYear('paid_at', $this->currentYear)
                 ->sum('amount'),
@@ -50,7 +50,7 @@ class DashboardService
         $data = [];
         for ($month = 1; $month <= 12; $month++) {
             $revenue = Payment::where('tenant_id', $this->tenantId)
-                ->where('status', 'paid')
+                ->where('status', 'success')
                 ->whereMonth('paid_at', $month)
                 ->whereYear('paid_at', $year)
                 ->sum('amount');
@@ -62,6 +62,30 @@ class DashboardService
 
             $data[] = [
                 'name' => 'Tháng ' . $month,
+                'doanh_thu' => (float) $revenue,
+                'lich_dat' => $bookings,
+            ];
+        }
+        return $data;
+    }
+
+    public function getChartDataForMonth(int $year, int $month): array
+    {
+        $data = [];
+        $daysInMonth = Carbon::create($year, $month)->daysInMonth;
+
+        for ($day = 1; $day <= $daysInMonth; $day++) {
+            $revenue = Payment::where('tenant_id', $this->tenantId)
+                ->where('status', 'success')
+                ->whereDate('paid_at', Carbon::create($year, $month, $day)->format('Y-m-d'))
+                ->sum('amount');
+
+            $bookings = Booking::where('tenant_id', $this->tenantId)
+                ->whereDate('booking_date', Carbon::create($year, $month, $day)->format('Y-m-d'))
+                ->count();
+
+            $data[] = [
+                'name' => sprintf('%02d/%02d/%04d', $day, $month, $year),
                 'doanh_thu' => (float) $revenue,
                 'lich_dat' => $bookings,
             ];
