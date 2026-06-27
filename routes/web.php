@@ -49,11 +49,11 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
 });
 
 
-Route::get('/admin/home', [SaasLandingController::class, 'index'])->name('saas.landing');
+Route::get('/landing', [SaasLandingController::class, 'index'])->name('saas.landing');
 
 Route::post('/register-tenant', [SaasLandingController::class, 'registerTenant'])->name('saas.register_tenant');
 
-
+`
 Route::get('/{slug}', [TenantPublicController::class, 'show'])
     ->name('tenant.public.landing');
 
