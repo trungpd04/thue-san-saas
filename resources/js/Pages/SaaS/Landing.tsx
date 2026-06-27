@@ -83,6 +83,9 @@ export default function Landing({ plans }: LandingProps) {
                             <Button type="primary" size="large" icon={<ArrowRightOutlined />} style={{ background: '#52c41a', borderColor: '#52c41a', height: '54px', padding: '0 32px', borderRadius: '8px', fontWeight: 600, fontSize: '16px', boxShadow: '0 4px 14px rgba(82,196,26,0.3)' }} href="/register">
                                 Thử nghiệm miễn phí ngay
                             </Button>
+                            <Button type="primary" size="large" icon={<ArrowRightOutlined />} style={{ background: '#52c41a', borderColor: '#52c41a', height: '54px', padding: '0 32px', borderRadius: '8px', fontWeight: 600, fontSize: '16px', boxShadow: '0 4px 14px rgba(82,196,26,0.3)' }} href="/san">
+                                Đặt sân
+                            </Button>
                             <Button size="large" style={{ height: '54px', padding: '0 28px', borderRadius: '8px', fontWeight: 500 }} href="#pricing">
                                 Xem bảng giá dịch vụ
                             </Button>
@@ -108,7 +111,7 @@ export default function Landing({ plans }: LandingProps) {
                     {/* SECTION 2: TÍNH NĂNG NỔI BẬT (FEATURES GRID) */}
                     <div id="features" style={{ padding: '100px 80px', maxWidth: '1200px', margin: '0 auto' }}>
                         <div style={{ textAlign: 'center', marginBottom: '60px' }}>
-                            <Title level={2} style={{ fontSize: '32px', fontWeight: 700 }}>Tại sao các chủ sân lựa chọn PITCH-SAAS?</Title>
+                            <Title level={2} style={{ fontSize: '32px', fontWeight: 700 }}>Tại sao các chủ sân lựa chọn?</Title>
                             <Text type="secondary" style={{ fontSize: '16px' }}>Đầy đủ bộ công cụ chuyên sâu xóa bỏ hoàn toàn quy trình ghi sổ tay lỗi thời</Text>
                         </div>
 
@@ -230,8 +233,7 @@ export default function Landing({ plans }: LandingProps) {
                 {/* 3. FOOTER */}
                 <Footer style={{ textAlign: 'center', background: '#141414', color: '#8c8c8c', padding: '40px 50px' }}>
                     <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <div style={{ fontWeight: '700', color: '#fff', fontSize: '16px' }}>⚽ PITCH-SAAS MANAGEMENT NỀN TẢNG</div>
-                        <div style={{ color: '#595959' }}>©2026 Được hoàn thiện bởi Đồ án Tốt Nghiệp Team. All rights reserved.</div>
+                        <div style={{ color: '#595959' }}>©2026 Được hoàn thiện bởi Đồ án Team. All rights reserved.</div>
                     </div>
                 </Footer>
 
