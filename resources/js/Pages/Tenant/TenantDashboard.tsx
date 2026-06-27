@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { Head } from '@inertiajs/react';
-import { Card, Col, Row, Statistic, Typography, Select } from 'antd';
-import { AppstoreOutlined, CalendarOutlined, CrownOutlined, DollarCircleOutlined } from '@ant-design/icons';
+import { Head, usePage } from '@inertiajs/react';
+import { Card, Col, Row, Statistic, Typography, Select, Button, Modal, Form } from 'antd';
+import { AppstoreOutlined, CalendarOutlined, CrownOutlined, DollarCircleOutlined, DownloadOutlined } from '@ant-design/icons';
 import { XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Line, ComposedChart, Bar } from 'recharts';
 import TenantLayout from '../../Layout/Tenant/TenantLayout'; 
 
@@ -17,6 +17,24 @@ export default function TenantDashboard({ stats = {}, chartDataCurrentYear = [],
 
     // Lấy dữ liệu 12 tháng tương ứng với năm được chọn
     const currentChartData = chartFilter === 'current_year' ? chartDataCurrentYear : chartDataLastYear;
+
+    const { props } = usePage<any>();
+    const tenancy = props.tenancy;
+    const slug = tenancy?.tenant?.slug;
+    const base = slug ? `/tenant/${slug}` : '/tenant';
+
+    const [isExportModalVisible, setIsExportModalVisible] = useState(false);
+    const [exportForm] = Form.useForm();
+
+    const handleExport = (values: any) => {
+        const { export_year, export_month } = values;
+        let url = `${base}/dashboard/export?year=${export_year}`;
+        if (export_month && export_month !== 'all') {
+            url += `&month=${export_month}`;
+        }
+        window.location.href = url;
+        setIsExportModalVisible(false);
+    };
 
     return (
         <div style={{ padding: '24px', background: '#f5f5f5', minHeight: '100%' }}>
@@ -53,15 +71,26 @@ export default function TenantDashboard({ stats = {}, chartDataCurrentYear = [],
                 style={{ borderRadius: '12px', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}
                 title={<Title level={4} style={{ margin: 0 }}>Thống kê doanh thu & lịch đặt</Title>}
                 extra={
-                    <Select
-                        value={chartFilter}
-                        style={{ width: 140 }}
-                        onChange={(value) => setChartFilter(value)}
-                        options={[
-                            { value: 'current_year', label: `Năm ${stats.current_year}` },
-                            { value: 'last_year', label: `Năm ${stats.last_year}` },
-                        ]}
-                    />
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                        <Button type="primary" icon={<DownloadOutlined />} onClick={() => {
+                            exportForm.setFieldsValue({ 
+                                export_year: chartFilter === 'current_year' ? stats.current_year : stats.last_year,
+                                export_month: 'all'
+                            });
+                            setIsExportModalVisible(true);
+                        }}>
+                            Xuất Excel
+                        </Button>
+                        <Select
+                            value={chartFilter}
+                            style={{ width: 140 }}
+                            onChange={(value) => setChartFilter(value)}
+                            options={[
+                                { value: 'current_year', label: `Năm ${stats.current_year}` },
+                                { value: 'last_year', label: `Năm ${stats.last_year}` },
+                            ]}
+                        />
+                    </div>
                 }
             >
                 <div style={{ width: '100%', height: 400 }}>
@@ -105,6 +134,37 @@ export default function TenantDashboard({ stats = {}, chartDataCurrentYear = [],
                     </ResponsiveContainer>
                 </div>
             </Card>
+
+            <Modal
+                title="Xuất Báo Cáo Doanh Thu"
+                open={isExportModalVisible}
+                onCancel={() => setIsExportModalVisible(false)}
+                onOk={() => exportForm.submit()}
+                okText="Tải xuống Excel"
+                cancelText="Hủy"
+            >
+                <Form form={exportForm} layout="vertical" onFinish={handleExport}>
+                    <Form.Item label="Chọn năm" name="export_year" initialValue={stats.current_year}>
+                        <Select
+                            options={[
+                                { value: stats.current_year, label: `Năm ${stats.current_year}` },
+                                { value: stats.last_year, label: `Năm ${stats.last_year}` },
+                            ]}
+                        />
+                    </Form.Item>
+                    <Form.Item label="Chọn thời gian" name="export_month" initialValue="all">
+                        <Select
+                            options={[
+                                { value: 'all', label: 'Cả năm (Thống kê theo tháng)' },
+                                ...Array.from({ length: 12 }, (_, i) => ({
+                                    value: i + 1,
+                                    label: `Tháng ${i + 1} (Thống kê theo ngày)`
+                                }))
+                            ]}
+                        />
+                    </Form.Item>
+                </Form>
+            </Modal>
         </div>
     );
 }
