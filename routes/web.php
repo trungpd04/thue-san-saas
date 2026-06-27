@@ -15,7 +15,7 @@ use App\Http\Controllers\TenantPublicController;
 Route::redirect('/', '/admin/dashboard');
 Route::redirect('/admin', '/admin/dashboard');
 
-Route::get('/san', [PublicFieldController::class, 'index'])->name('public.fields.index');
+Route::get('/san', [PublicFieldController::class, 'index'])->name('guest.fields.index');
 Route::get('/san/{field}/bookings', [PublicFieldController::class, 'bookings'])->name('public.fields.bookings');
 // Route::get('/san/tenant/{tenant_id}/bookings', [PublicFieldController::class, 'tenantBookings'])->name('public.fields.tenantBookings');
 Route::get('/san/tenant/{tenant_id}/available-slots', [PublicFieldController::class, 'availableSlots'])->name('public.fields.availableSlots');
@@ -38,7 +38,7 @@ Route::post('/admin/logout', [AuthenticatedSessionController::class, 'destroy'])
     ->name('admin.logout');
 
 Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
-   Route::get('/dashboard', [DashboardController::class, 'index'])->name('admin.dashboard');
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('admin.dashboard');
 
     Route::get('/tenant-management', [TenantController::class, 'index'])->name('admin.tenants.index');
     Route::patch('/tenant-management/{tenant}/status', [TenantController::class, 'updateStatus'])->name('admin.tenants.status');
@@ -49,11 +49,10 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
 });
 
 
-Route::get('/landing', [SaasLandingController::class, 'index'])->name('saas.landing');
+Route::get('/', [SaasLandingController::class, 'index'])->name('saas.landing');
 
 Route::post('/register-tenant', [SaasLandingController::class, 'registerTenant'])->name('saas.register_tenant');
 
-`
 Route::get('/{slug}', [TenantPublicController::class, 'show'])
     ->name('tenant.public.landing');
 
@@ -64,4 +63,4 @@ Route::get('/{slug}/fields/{field_id}/schedule', [TenantPublicController::class,
 
 // page guest
 
-Route::get('/', [PublicFieldController::class, 'index'])->name('guest.fields.index');
+// Route::get('/san', [PublicFieldController::class, 'index'])->name('guest.fields.index');
