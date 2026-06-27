@@ -4,13 +4,13 @@ namespace App\Http\Controllers\Webhook\SePay;
 
 use App\Http\Controllers\Controller;
 use App\Models\Tenant;
-use App\Services\Webhook\SePayBookingService;
+use App\Services\Booking\BookingPaymentService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
 class SePayBankHubWebhookController extends Controller
 {
-    public function __construct(private readonly SePayBookingService $bookingService)
+    public function __construct(private readonly BookingPaymentService $bookingPaymentService)
     {
     }
 
@@ -48,11 +48,12 @@ class SePayBankHubWebhookController extends Controller
             }
         }
 
-        $result = $this->bookingService->handle([
+        // Sử dụng BookingPaymentService với adapter pattern
+        $result = $this->bookingPaymentService->handleWebhook([
             'content' => $data['content'] ?? $data['transaction_content'] ?? $data['description'] ?? '',
             'transferAmount' => $data['amount_in'] ?? $data['amount'] ?? 0,
             'transaction_id' => $data['transaction_id'] ?? $data['id'] ?? null,
-        ]);
+        ], 'sepay_bankhub');
 
         return response()->json($result);
     }

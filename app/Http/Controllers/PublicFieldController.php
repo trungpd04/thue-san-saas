@@ -6,7 +6,6 @@ use App\Models\Tenant\Field;
 use App\Http\Requests\StoreBookingRequest;
 use App\Contracts\Tenant\IBookingService;
 use App\Contracts\Tenant\IFieldQueryService;
-use App\Services\SePayService;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -16,16 +15,16 @@ class PublicFieldController extends Controller
 {
     protected $fieldQueryService;
     protected $bookingService;
-    protected $sePayService;
+    protected $bookingPaymentService;
 
     public function __construct(
         IFieldQueryService $fieldQueryService,
         IBookingService $bookingService,
-        SePayService $sePayService,
+        \App\Services\Booking\BookingPaymentService $bookingPaymentService
     ) {
         $this->fieldQueryService = $fieldQueryService;
         $this->bookingService = $bookingService;
-        $this->sePayService = $sePayService;
+        $this->bookingPaymentService = $bookingPaymentService;
     }
 
     public function index(Request $request)
@@ -162,32 +161,16 @@ class PublicFieldController extends Controller
         }
 
         $tenant = $bookings->first()->tenant;
-        $totalAmount = (float) $bookings->sum('total_price');
-        $paymentCode = 'BK' . $bookings->first()->id;
-        $bankAccount = null;
-        $paymentError = null;
+        
+        // Gọi BookingPaymentService theo Adapter Pattern
+        $paymentResult = $this->bookingPaymentService->createPayment($bookings, 'sepay_bankhub', [
+            'tenant' => $tenant
+        ]);
 
-        if (!$tenant->sepay_company_xid || !$tenant->has_linked_bank) {
-            $paymentError = 'Chu san chua lien ket tai khoan ngan hang SePay Bank Hub.';
-        } else {
-            try {
-                $bankAccounts = $this->sePayService->listBankAccounts($tenant->sepay_company_xid);
-                $bankAccount = collect($bankAccounts)->first(function ($account) use ($tenant) {
-                    return !$tenant->sepay_bank_account_xid
-                        || ($account['xid'] ?? null) === $tenant->sepay_bank_account_xid;
-                }) ?? $bankAccounts[0] ?? null;
-
-                if (!$bankAccount) {
-                    $paymentError = 'Khong tim thay tai khoan ngan hang da lien ket tren SePay Bank Hub.';
-                }
-            } catch (\Throwable $e) {
-                Log::warning('Cannot load SePay Bank Hub account for checkout: ' . $e->getMessage(), [
-                    'tenant_id' => $tenant->id,
-                ]);
-
-                $paymentError = 'Khong the tai thong tin tai khoan SePay Bank Hub. Vui long thu lai sau.';
-            }
-        }
+        $paymentCode = $paymentResult['payment_code'] ?? ('BK' . $bookings->first()->id);
+        $totalAmount = $paymentResult['amount'] ?? (float) $bookings->sum('total_price');
+        $bankAccount = $paymentResult['bank_account'] ?? null;
+        $paymentError = $paymentResult['success'] ? null : ($paymentResult['message'] ?? 'Lỗi thanh toán.');
 
         return Inertia::render('Public/Checkout', [
             'bookings' => $this->formatCheckoutBookings($bookings),
