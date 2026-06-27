@@ -43,6 +43,10 @@ Route::middleware([InitializeTenancyBySlug::class])
                 ->middleware(['permission:access_dashboard'])
                 ->name('tenant.dashboard');
 
+            Route::get('/dashboard/export', [DashboardController::class, 'export'])
+                ->middleware(['permission:access_dashboard'])
+                ->name('tenant.dashboard.export');
+
             Route::resource('fields', FieldController::class)
                 ->middleware(['permission:manage_fields'])
                 ->names('tenant.fields');
