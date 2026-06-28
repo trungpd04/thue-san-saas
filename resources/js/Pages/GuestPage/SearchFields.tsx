@@ -69,7 +69,7 @@ const handleFilterSubmit = (typeIdOverride?: number | null) => {
         query.lng = selectedLocation.lng;
     }
 
-    router.get('/', query, { 
+    router.get('/san', query, { 
         preserveState: true, 
         preserveScroll: true 
     });
