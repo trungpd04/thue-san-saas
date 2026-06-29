@@ -31,6 +31,7 @@ class Field extends Model
     {
         return [
             'is_active' => 'boolean',
+            'field_type_id' => 'integer',
         ];
     }
 
