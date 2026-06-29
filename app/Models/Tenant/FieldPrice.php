@@ -23,6 +23,8 @@ class FieldPrice extends Model
     {
         return [
             'price_per_hour' => 'decimal:2',
+            'field_type_id' => 'integer',
+            'field_id' => 'integer',
         ];
     }
 }

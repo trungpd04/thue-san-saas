@@ -61,7 +61,7 @@ export default function FieldPriceIndex() {
 
     const showAddModal = (fieldTypeId?: number) => {
         if (fieldTypeId) {
-            const hasFields = fields.some(f => f.field_type_id === fieldTypeId);
+            const hasFields = fields.some(f => Number(f.field_type_id) === Number(fieldTypeId));
             if (!hasFields) {
                 message.warning('Bạn chưa có sân nào thuộc loại này. Vui lòng tạo sân trước khi cấu hình giá.');
                 return;
@@ -140,7 +140,7 @@ export default function FieldPriceIndex() {
             key: 'scope',
             render: (_: any, record: FieldPrice) => {
                 if (record.field_id) {
-                    const field = fields.find(f => f.id === record.field_id);
+                    const field = fields.find(f => Number(f.id) === Number(record.field_id));
                     return <Tag color="purple"><EnvironmentOutlined /> {field?.name || 'Sân đã xóa'}</Tag>;
                 }
                 return <Tag color="blue">Tất cả sân trong loại này</Tag>;
@@ -196,7 +196,7 @@ export default function FieldPriceIndex() {
         }
     ];
 
-    const filteredFields = fields.filter(f => f.field_type_id === selectedFieldType);
+    const filteredFields = fields.filter(f => Number(f.field_type_id) === Number(selectedFieldType));
 
     return (
         <div>
