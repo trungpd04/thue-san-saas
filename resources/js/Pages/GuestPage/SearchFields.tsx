@@ -344,6 +344,33 @@ const handleFilterSubmit = (typeIdOverride?: number | null) => {
                     </Button>
                 </div>
             </Drawer>
+
+            <Modal
+                title={`Vị trí: ${selectedFieldName}`}
+                open={mapModalVisible}
+                onCancel={() => setMapModalVisible(false)}
+                footer={null}
+                width={800}
+                centered
+            >
+                {selectedLocation && (
+                    <div style={{ marginTop: 16 }}>
+                        <MapPicker
+                            height="450px"
+                            value={selectedLocation}
+                        />
+                        <div style={{ textAlign: 'right', marginTop: 16 }}>
+                            <Button
+                                type="primary"
+                                href={`https://www.google.com/maps/dir/?api=1&destination=${selectedLocation.lat},${selectedLocation.lng}`}
+                                target="_blank"
+                            >
+                                Chỉ đường trên Google Maps
+                            </Button>
+                        </div>
+                    </div>
+                )}
+            </Modal>
         </div>
     );
 }
