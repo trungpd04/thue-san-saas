@@ -96,7 +96,7 @@ export default function BookingPage({ tenant, fieldType }: any) {
             <div className="bg-white shadow-sm mb-8" style={{ background: '#fff', padding: '24px 0', marginBottom: 32 }}>
                 <div style={{ maxWidth: 1280, margin: '0 auto', padding: '0 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                        <Link href="/san">
+                        <Link href="/">
                             <Button icon={<ArrowLeftOutlined />} shape="circle" size="large" />
                         </Link>
                         <div>
