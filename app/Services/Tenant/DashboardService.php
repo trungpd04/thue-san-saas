@@ -36,7 +36,7 @@ class DashboardService
                 ->whereYear('booking_date', $this->currentYear)
                 ->count(),
             'revenue' => Payment::where('tenant_id', $this->tenantId)
-                ->where('status', 'success')
+                ->whereIn('status', ['success', 'paid'])
                 ->whereMonth('paid_at', $this->now->month)
                 ->whereYear('paid_at', $this->currentYear)
                 ->sum('amount'),
@@ -50,7 +50,7 @@ class DashboardService
         $data = [];
         for ($month = 1; $month <= 12; $month++) {
             $revenue = Payment::where('tenant_id', $this->tenantId)
-                ->where('status', 'success')
+                ->whereIn('status', ['success', 'paid'])
                 ->whereMonth('paid_at', $month)
                 ->whereYear('paid_at', $year)
                 ->sum('amount');
@@ -76,7 +76,7 @@ class DashboardService
 
         for ($day = 1; $day <= $daysInMonth; $day++) {
             $revenue = Payment::where('tenant_id', $this->tenantId)
-                ->where('status', 'success')
+                ->whereIn('status', ['success', 'paid'])
                 ->whereDate('paid_at', Carbon::create($year, $month, $day)->format('Y-m-d'))
                 ->sum('amount');
 
