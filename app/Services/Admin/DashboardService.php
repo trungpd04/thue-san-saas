@@ -13,8 +13,8 @@ class DashboardService
         $totalTenants = Tenant::count();
 
         // Tính tổng doanh thu từ bảng thanh toán gói dịch vụ
-        // Giả sử trạng thái thanh toán thành công của bạn là 'paid'
-        $totalRevenue = SubscriptionPayment::where('status', 'paid')->sum('amount');
+        // Trạng thái thanh toán thành công trong hệ thống có thể là 'paid' hoặc 'success'
+        $totalRevenue = SubscriptionPayment::whereIn('status', ['paid', 'success'])->sum('amount');
 
         return [
             'total_tenants' => $totalTenants,
