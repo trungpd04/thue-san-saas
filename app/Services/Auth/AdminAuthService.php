@@ -2,7 +2,9 @@
 
 namespace App\Services\Auth;
 
+use App\Models\User;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
 
 class AdminAuthService
@@ -12,19 +14,21 @@ class AdminAuthService
      */
     public function attemptLogin(array $credentials, bool $remember): void
     {
-        if (! Auth::attempt($credentials, $remember)) {
+        $user = User::where('email', $credentials['email'])->first();
+
+        if (! $user || ! Hash::check($credentials['password'], $user->password)) {
             throw ValidationException::withMessages([
                 'email' => __('auth.failed'),
             ]);
         }
 
-        $user = Auth::user();
-
-        if (! $user || ! $user->isAdmin() || ! $user->is_active) {
+        if (! $user->isAdmin() || ! $user->is_active) {
             throw ValidationException::withMessages([
                 'email' => 'Tài khoản không có quyền truy cập khu vực quản trị.',
             ]);
         }
+
+        Auth::login($user, $remember);
     }
 
     public function logout(): void
@@ -32,4 +36,5 @@ class AdminAuthService
         Auth::logout();
     }
 }
+
 
