@@ -35,6 +35,7 @@ class AuthenticatedTenantSessionController extends Controller
             }
 
             throw $e;
+            
         }
 
         $request->session()->regenerate();
